@@ -41,7 +41,7 @@ git branch
 You should see:
 
 ```text
-* feature/human_resource
+* feature/yourname/human_resource
 ```
 
 > **Important**
