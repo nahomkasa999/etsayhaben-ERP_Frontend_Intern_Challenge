@@ -29,7 +29,7 @@ cd ERP_Frontend_Intern_Challenge
 After cloning the repository, create a new branch for your work.
 
 ```bash
-git checkout -b feature/human_resource
+git checkout -b feature/yourname/human_resource
 ```
 
 Verify your current branch:
