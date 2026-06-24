@@ -1,9 +1,10 @@
 'use client'
+
 import { SearchBar } from './SearchBar'
 import { DepartmentFilter } from './DepartmentFilter'
 import {useEmployees} from '../hooks/useEmployees'
 import { EmployeeRow } from './EmployeeRow'
-import { BulkActionBarEmployee } from './BulkActionBar'
+import { BulkActionBar } from './BulkActionBar'
 
 export function EmployeeTable() {
     const { employees, isLoading, isError, removeEmployee, search, setSearch, selectedDepartment } = useEmployees()
@@ -37,7 +38,7 @@ export function EmployeeTable() {
                 </tbody>
             </table>
               {employees.length === 0 && <p className="mt-4 text-gray-500">No employees found.</p>}
-            <BulkActionBarEmployee />
+            <BulkActionBar />
         </div>
     )
 }

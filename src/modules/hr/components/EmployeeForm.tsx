@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useQueryClient } from '@tanstack/react-query';
 import { Employee, EmployeeFormValues } from '../types';
 import { createEmployee, updateEmployee } from '../api/hrApi';
-import { EmplyeeFormValidator } from '../services/hrService';
+import { FormValidator } from '../services/hrService';
 
 interface EmployeeFormProps {
     mode: 'create' | 'edit'
@@ -14,7 +14,7 @@ interface EmployeeFormProps {
 
 const EMPTY_VALUES: EmployeeFormValues = {
     name: '',
-    department: 'sales',
+    department: 'Sales',
     email: '',
     phone: '',
     onLeave: false,
@@ -39,7 +39,7 @@ export function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     const handleSubmit = async (e: FormEvent) => { 
         e.preventDefault()
        
-        const validationErrors = EmplyeeFormValidator(values);
+        const validationErrors = FormValidator(values);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             return;
@@ -50,7 +50,6 @@ export function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
 
         try {
             if (mode === 'create') {
-                console.log(values)
                 await createEmployee(values);
             } else if (initialData) {
                 await updateEmployee(initialData.id, values);

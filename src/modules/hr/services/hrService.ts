@@ -1,6 +1,6 @@
 import { Employee, EmployeeFormValues } from '../types'
 
-export function EmplyeeFormValidator(values: EmployeeFormValues): Record<string, string> {
+export function FormValidator(values: EmployeeFormValues): Record<string, string> {
     const errors: Record<string, string> = {}
     
     if (!values.name.trim()) {

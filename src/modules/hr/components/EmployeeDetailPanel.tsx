@@ -3,7 +3,6 @@ import { Employee } from '../types'
 interface EmployeeDetailPanelProps {
     employee: Employee
 }
-//no need for this component. the datas are already shown in the employee rows
 export function EmployeeDetailPanel({ employee }: EmployeeDetailPanelProps) {
     return (
         <div className="p-4 text-sm ">

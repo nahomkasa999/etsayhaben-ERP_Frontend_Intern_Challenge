@@ -1,3 +1,5 @@
+'use client'
+
 import { Employee } from '../types'
 import { useState } from 'react'
 import { useSelectionStore } from '../stores/selectionStore'

@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {deleteEmployee} from '../api/hrApi'
 import { useSelectionStore } from '../stores/selectionStore'
 
-export function BulkActionBarEmployee() {
+export function BulkActionBar() {
     const selectedIds = useSelectionStore((s) => s.selectedIds)
     const clearSelection = useSelectionStore((s) => s.clearSelection)
     const queryClient = useQueryClient()

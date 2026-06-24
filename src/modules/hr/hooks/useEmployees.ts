@@ -16,7 +16,6 @@ export function useEmployees() {
         queryFn: async () => {
            const result = await fetchEmployees()
            const onLeaveCount = result.reduce((acc, employee) => acc + (employee.onLeave ? 1 : 0), 0)
-           console.log(onLeaveCount)
            setOnLeaveCount(onLeaveCount)
            return result
         }

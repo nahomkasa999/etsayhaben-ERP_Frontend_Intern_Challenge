@@ -15,8 +15,6 @@ export default function EditEmployeePage() {
 
     if (isLoading) return <p>Loading...</p>
     if (!employee) return <p>Employee not found.</p>
-    console.log(employee)
-
     return (
         <div>
             <h1 className="text-2xl font-bold mb-4">Edit Employee</h1>
