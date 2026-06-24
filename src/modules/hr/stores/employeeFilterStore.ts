@@ -1,13 +1,13 @@
 import { create } from 'zustand'
 
 interface EmployeeFilterState {
-    selectedDepartment: string
-    setDepartment: (department: string) => void
+    selectedDepartment: string | null,
+    setDepartment: (department: string | null) => void
 }
 
 export const useEmployeeFilterStore = create<EmployeeFilterState>((set) => {
     return {
-        selectedDepartment: '',
+        selectedDepartment: null,
         setDepartment: (department) => set({ selectedDepartment: department }),
     }
 })

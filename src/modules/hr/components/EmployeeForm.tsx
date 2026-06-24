@@ -56,9 +56,6 @@ export function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                 await updateEmployee(initialData.id, values);
             }
             
-            // Invalidate the 'employees' query to mark the cached data as stale
-            // This tells React Query to refetch the employee list the next time it's accessed
-            // Ensures the UI displays the newly created or updated employee
             queryClient.invalidateQueries({ queryKey: ['employees'] });
             router.push('/hr');
         }
@@ -108,8 +105,8 @@ export function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
             <div>
                 <label className='block text-sm font-medium'>Phone</label>
                 <input
-                    type="number"
-                    placeholder="123-456-7890"
+                    type="text"
+                    placeholder="0929333563 or +251929333563"
                     className="border rounded px-3 py-2 w-full"
                     value={values.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}

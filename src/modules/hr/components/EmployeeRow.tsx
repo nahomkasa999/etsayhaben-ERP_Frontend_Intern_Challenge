@@ -1,7 +1,7 @@
 import { Employee } from '../types'
 import { useState } from 'react'
 import { useSelectionStore } from '../stores/selectionStore'
-
+import Link from 'next/link'
 import { EmployeeDetailPanel } from './EmployeeDetailPanel'
 interface EmployeeRowProps {
     employee: Employee
@@ -31,8 +31,15 @@ export function EmployeeRow({ employee, onDelete }: EmployeeRowProps) {
               <button onClick={() => setConfirmOpen(false)}>Cancel</button>
             </span>
           ) : (
+            <>
+            <Link href={`/hr/${employee.id}`} className="text-blue-600 px-4">
+              Edit
+            </Link>
             <button onClick={() => setConfirmOpen(true)} className="text-red-600">Delete</button>
+            
+            </>
           )}
+          
         </td>
         </tr>
          {isExpanded && (

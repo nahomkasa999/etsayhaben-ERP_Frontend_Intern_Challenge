@@ -5,11 +5,11 @@ const STORAGE_KEY = 'employees'
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const SEED_DATA: Employee[] = [
-  { id: '1', name: 'Nahom Kasa', department: 'Sales', email: 'nahom@example.com', phone: '123-456-7890', onLeave: false, updatedAt: new Date().toISOString() },
-  { id: '2', name: 'Beti Abera', department: 'Marketing', email: 'beti@example.com', phone: '987-654-3210', onLeave: true, updatedAt: new Date().toISOString() },
-  { id: '3', name: 'Bob Johnson', department: 'Finance', email: 'bob@example.com', phone: '555-123-4567', onLeave: false, updatedAt: new Date().toISOString() },
-  { id: '4', name: 'Sara Lee', department: 'Engineering', email: 'sara@example.com', phone: '555-987-6543', onLeave: true, updatedAt: new Date().toISOString() },
-  { id: '5', name: 'David Kim', department: 'Sales', email: 'david@example.com', phone: '555-456-7890', onLeave: false, updatedAt: new Date().toISOString() },
+  { id: '1', name: 'Nahom Kasa', department: 'Sales', email: 'nahom@example.com', phone: '0929333563', onLeave: false, updatedAt: new Date().toISOString() },
+  { id: '2', name: 'Beti Abera', department: 'Marketing', email: 'beti@example.com', phone: '+251929876543', onLeave: true, updatedAt: new Date().toISOString() },
+  { id: '3', name: 'Bob Johnson', department: 'Finance', email: 'bob@example.com', phone: '0910123456', onLeave: false, updatedAt: new Date().toISOString() },
+  { id: '4', name: 'Sara Lee', department: 'Engineering', email: 'sara@example.com', phone: '+251921654987', onLeave: true, updatedAt: new Date().toISOString() },
+  { id: '5', name: 'David Kim', department: 'Sales', email: 'david@example.com', phone: '0912345678', onLeave: false, updatedAt: new Date().toISOString() },
 ]
 
 function readDb(): Employee[] {

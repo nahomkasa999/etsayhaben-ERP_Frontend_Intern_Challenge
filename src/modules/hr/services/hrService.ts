@@ -21,10 +21,9 @@ export function EmplyeeFormValidator(values: EmployeeFormValues): Record<string,
     
     if (!values.phone.trim()) {
         errors.phone = 'Phone is required'
-    } else if (values.phone.trim().length < 5) {
-        errors.phone = 'Phone number must contain at least 5 digits'
+    } else if (!isValidPhone(values.phone.trim())) {
+        errors.phone = 'Please enter a valid phone number (e.g., 0929333563 or +251929333563)'
     }
-    
     return errors
 }
 
@@ -33,3 +32,7 @@ function isValidEmail(email: string): boolean {
     return emailRegex.test(email)
 }
 
+function isValidPhone(phone: string): boolean {
+    const phoneRegex = /^(0\d{9}|\+251\d{9})$/
+    return phoneRegex.test(phone)
+}

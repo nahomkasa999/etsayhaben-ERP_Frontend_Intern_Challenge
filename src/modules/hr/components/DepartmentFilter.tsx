@@ -12,7 +12,7 @@ export function DepartmentFilter() {
     <select
       className="border rounded px-3 py-2"
       value={selectedDepartment ?? ''}
-      onChange={(e) => setDepartment(e.target.value)}
+      onChange={(e) => setDepartment(e.target.value || null)}
     >
       <option value="">All departments</option>
       {Department.map((dept) => (
