@@ -3,7 +3,6 @@
 // root layout — completely different parts of the app.
 
 import { create } from 'zustand'
-
 interface InventoryStatsState {
   lowStockCount: number
   setLowStockCount: (count: number) => void

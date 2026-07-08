@@ -1,22 +1,46 @@
 'use client'
 
-import { useEmployeeFilterStore } from '../stores/employeeFilterStore'
+import { useDepartmentFilterStore } from '../store/departmentFilterStore'
 
-const Department = ['Sales', 'Marketing', 'Engineering', 'HR', 'Finance']   
+const DEPARTMENTS = [
+  'Store',
+  'Engineering',
+  'Finance',
+  'Marketing',
+]
 
 export function DepartmentFilter() {
- const selectedDepartment = useEmployeeFilterStore((s) => s.selectedDepartment)
- const setDepartment = useEmployeeFilterStore((s) => s.setDepartment)
-  
- return (
+  const selectedDepartment =
+    useDepartmentFilterStore(
+      (s) => s.selectedDepartment
+    )
+
+  const setDepartment =
+    useDepartmentFilterStore(
+      (s) => s.setDepartment
+    )
+
+  return (
     <select
-      className="border rounded px-3 py-2"
       value={selectedDepartment ?? ''}
-      onChange={(e) => setDepartment(e.target.value || null)}
+      onChange={(e) =>
+        setDepartment(
+          e.target.value || null
+        )
+      }
+      className="border rounded px-3 py-2"
     >
-      <option value="">All departments</option>
-      {Department.map((dept) => (
-        <option key={dept} value={dept}>{dept}</option>
+      <option value="">
+        All Departments
+      </option>
+
+      {DEPARTMENTS.map((department) => (
+        <option
+          key={department}
+          value={department}
+        >
+          {department}
+        </option>
       ))}
     </select>
   )

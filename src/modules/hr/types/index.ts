@@ -1,13 +1,16 @@
 // Shared shape used by every file in this module — the single source of truth.
+
 export interface Employee {
-    id: string
-    name: string
-    department: string
-    email: string
-    phone: string
-    onLeave: boolean
-    updatedAt: string
+  id: string
+  name: string
+  email: string
+  department: 'Store' | 'Engineering' | 'Finance' | 'Marketing'
+  status: 'active' | 'on_leave'
+  updatedAt: string
 }
 
-// Used by the form — id/onLeave/updatedAt are set by the "backend", not the user.
-export type EmployeeFormValues = Omit<Employee, 'id' | 'updatedAt'>
+// Used by the form — id and updatedAt are generated automatically.
+export type EmployeeFormValues = Omit<
+  Employee,
+  'id' | 'updatedAt'
+>
