@@ -1,4 +1,8 @@
-import { FiscalYear, FiscalYearRequestForm } from "../types";
+import {
+  FiscalYear,
+  FiscalYearListResponse,
+  ListFiscalYearsParams,
+} from "../types";
 import SEED_DATA from "./SeedStore";
 
 const STORAGE_KEY = "FiscalYearDB";
@@ -22,66 +26,24 @@ function writeDb(FiscalYears: FiscalYear[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(FiscalYears));
 }
 
-export async function fetchFiscalYears(): Promise<FiscalYear[]> {
+export async function fetchFiscalYearLists(
+  params: ListFiscalYearsParams,
+): Promise<FiscalYearListResponse> {
   await delay(400);
-  return readDb();
-}
+  const tenant_id = params.tenant_id;
+  const company_id = params.company_id;
+  const fiscalYears = readDb().filter(
+    (fy) => fy.tenant_id === tenant_id && fy.company_id === company_id,
+  );
 
-export async function fetchFiscalYearById(
-  id: string,
-): Promise<FiscalYear | undefined> {
-  await delay(300);
-  return readDb().find((FiscalYear) => FiscalYear.id === id);
-}
-
-export async function createFiscalYear(
-  payload: FiscalYearRequestForm,
-): Promise<FiscalYear> {
-  await delay(400);
-
-  const FiscalYears = readDb();
-
-  const newFiscalYear: FiscalYear = {
-    ...payload,
-    id: crypto.randomUUID(),
-    updatedAt: new Date().toISOString(),
+  return {
+    count: fiscalYears.length,
+    results: fiscalYears.map((fy) => ({
+      id: fy.id,
+      fiscal_year_name: fy.fiscal_year_name,
+      status: fy.status,
+      start_date_eth: fy.start_date_eth,
+      end_date_eth: fy.end_date_eth,
+    })),
   };
-
-  writeDb([...FiscalYears, newFiscalYear]);
-
-  return newFiscalYear;
-}
-
-export async function updateFiscalYear(
-  id: string,
-  payload: Partial<FiscalYearRequestForm>,
-): Promise<FiscalYear> {
-  await delay(400);
-
-  const FiscalYears = readDb();
-
-  const index = FiscalYears.findIndex((FiscalYear) => FiscalYear.id === id);
-
-  if (index === -1) {
-    throw new Error("FiscalYear not found.");
-  }
-
-  const updatedFiscalYear: FiscalYear = {
-    ...FiscalYears[index],
-    ...payload,
-    updatedAt: new Date().toISOString(),
-  };
-
-  FiscalYears[index] = updatedFiscalYear;
-
-  writeDb(FiscalYears);
-
-  return updatedFiscalYear;
-}
-
-export async function deleteFiscalYear(id: string): Promise<{ success: true }> {
-  await delay(300);
-
-  writeDb(readDb().filter((FiscalYear) => FiscalYear.id !== id));
-  return { success: true };
 }

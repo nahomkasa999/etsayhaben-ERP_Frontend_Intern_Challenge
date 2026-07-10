@@ -1,36 +1,30 @@
-'use client'
+"use client";
 
 // ── GLOBAL STATE ─────────────────────────────────────────────────
 // Reads values written by other modules through Zustand stores.
 
-import Link from 'next/link'
+import Link from "next/link";
 
-import { useInventoryStatsStore } from '@/shared/store/inventoryStatsStore'
-import { useEmployeeStatsStore } from '@/shared/store/employeeStatsStore'
+import { useInventoryStatsStore } from "@/shared/store/inventoryStatsStore";
+import { useEmployeeStatsStore } from "@/shared/store/employeeStatsStore";
+import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 
 export function Navbar() {
-  const lowStockCount =
-    useInventoryStatsStore(
-      (s) => s.lowStockCount
-    )
+  const lowStockCount = useInventoryStatsStore((s) => s.lowStockCount);
 
-  const employeesOnLeave =
-    useEmployeeStatsStore(
-      (s) => s.employeesOnLeave
-    )
+  const employeesOnLeave = useEmployeeStatsStore((s) => s.employeesOnLeave);
+
+  const { tenantId, companyId } = useTenantStore();
 
   return (
     <nav className="flex gap-6 p-4 border-b">
-      <Link href="/dashboard">
-        Dashboard
-      </Link>
+      <Link href="/dashboard">Dashboard</Link>
 
       <Link
         href="/inventory"
         className="relative"
       >
         Inventory
-
         {lowStockCount > 0 && (
           <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
             {lowStockCount}
@@ -43,13 +37,19 @@ export function Navbar() {
         className="relative"
       >
         HR
-
         {employeesOnLeave > 0 && (
           <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
             {employeesOnLeave}
           </span>
         )}
       </Link>
+
+      <Link
+        href={`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`}
+        className="relative"
+      >
+        fiscal-year
+      </Link>
     </nav>
-  )
+  );
 }
