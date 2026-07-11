@@ -1,4 +1,7 @@
+import { deriveFiscalYearDates } from "../services/CalenderConverter/convertCalender";
 import {
+  CreateFiscalYearRequestBase,
+  CreateFiscalYearResponse,
   FiscalYear,
   FiscalYearListResponse,
   ListFiscalYearsParams,
@@ -46,4 +49,28 @@ export async function fetchFiscalYearLists(
       end_date_eth: fy.end_date_eth,
     })),
   };
+}
+
+export async function CreateFiscalYear(
+  Request: CreateFiscalYearRequestBase,
+): Promise<CreateFiscalYearResponse> {
+  await delay(400);
+  const FiscalYear = readDb();
+  const derivedDates = deriveFiscalYearDates(
+    Request.calendar_type,
+    Request.start_date,
+    Request.end_date,
+  );
+  const newFiscalYear: CreateFiscalYearResponse = {
+    ...Request,
+    ...derivedDates,
+    id: crypto.randomUUID(),
+    status: "OPEN",
+    created_by: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  writeDb([...FiscalYear, newFiscalYear]);
+
+  return newFiscalYear;
 }

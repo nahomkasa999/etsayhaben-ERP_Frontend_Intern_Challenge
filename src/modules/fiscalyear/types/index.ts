@@ -5,11 +5,11 @@ export interface FiscalYear {
   fiscal_year_name: string;
   calendar_type: "ETHIOPIAN" | "GREGORIAN";
   start_date_eth: string;
-  start_date_gre?: string;
+  start_date_gre: string;
   end_date_eth: string;
-  end_date_gre?: string;
+  end_date_gre: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
-  created_by?: string;
+  created_by: string;
   created_at: string;
   updated_at: string;
   closed_by?: string | null;
@@ -17,6 +17,27 @@ export interface FiscalYear {
   justification?: string | null;
 }
 
+//create fiscal year
+export interface CreateFiscalYearRequestBase {
+  tenant_id: string;
+  company_id: string;
+  fiscal_year_name: string;
+  calendar_type: "ETHIOPIAN" | "GREGORIAN";
+  start_date: string;
+  end_date: string;
+}
+
+export type CreateFiscalYearResponse = Omit<
+  FiscalYear,
+  "justification" | "closed_at" | "closed_by"
+>;
+
+export type CreateFiscalYearFormValue = Omit<
+  CreateFiscalYearRequestBase,
+  "tenant_id" | "company_id"
+>;
+
+//Get Lists
 export type FiscalYearList = Pick<
   FiscalYear,
   "id" | "fiscal_year_name" | "status" | "start_date_eth" | "end_date_eth"

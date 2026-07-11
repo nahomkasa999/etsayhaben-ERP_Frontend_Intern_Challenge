@@ -2,11 +2,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { FiscalYearListResponse } from "../types";
 import { fetchFiscalYearLists } from "../api/fiscalyearApi";
-import { useTenantStore } from "../store/FiscalYearStore";
 
-export function useFiscalYear() {
-  const { tenantId, companyId } = useTenantStore();
-
+export function useFiscalYear(tenantId: string, companyId: string) {
   const {
     data: fiscalYearListsAllResponse,
     isLoading,

@@ -14,7 +14,7 @@ export function Navbar() {
 
   const employeesOnLeave = useEmployeeStatsStore((s) => s.employeesOnLeave);
 
-  const { tenantId, companyId } = useTenantStore();
+  const { tenantId, companyId } = useTenantStore(); //using this for now as a db return
 
   return (
     <nav className="flex gap-6 p-4 border-b">

@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useFiscalYear } from "../hooks/useFiscalyear";
 import type { FiscalYearList } from "../types";
 
@@ -9,7 +10,14 @@ const STATUS_COLORS: Record<FiscalYearList["status"], string> = {
 };
 
 export function FiscalYearTable() {
-  const { fiscalYearListsAllResponse, isLoading, isError } = useFiscalYear();
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenant_id")!; //find a better way
+  const companyId = searchParams.get("company_id")!;
+
+  const { fiscalYearListsAllResponse, isLoading, isError } = useFiscalYear(
+    tenantId,
+    companyId,
+  );
 
   if (isLoading) return <p>Loading fiscal years...</p>;
   if (isError)
