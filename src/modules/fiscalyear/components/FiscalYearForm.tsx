@@ -6,7 +6,7 @@ import {
   CreateFiscalYearFormValue,
   CreateFiscalYearRequestBase,
 } from "../types";
-import { useTenantStore } from "../store/FiscalYearStore";
+import { useAuthStore, useTenantStore } from "../store/FiscalYearStore";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
 import { CreateFiscalYear } from "../api/fiscalyearApi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ export function FiscalYearForm() {
   const [serverErrors, setServerErrors] = useState("");
   const isEthiopianCalender = values.calendar_type === "ETHIOPIAN";
   const { tenantId, companyId } = useTenantStore();
+  const { userId } = useAuthStore();
 
   function handleChange(
     field: keyof CreateFiscalYearFormValue,
@@ -44,10 +45,12 @@ export function FiscalYearForm() {
     console.log("v:", validationErrors);
 
     const requestBody: CreateFiscalYearRequestBase = {
+      ...values,
       tenant_id: tenantId,
       company_id: companyId,
-      ...values,
+      created_by: userId,
     };
+    console.log(requestBody);
     setErrors({});
     setServerErrors("");
     try {

@@ -25,6 +25,7 @@ export interface CreateFiscalYearRequestBase {
   calendar_type: "ETHIOPIAN" | "GREGORIAN";
   start_date: string;
   end_date: string;
+  created_by: string;
 }
 
 export type CreateFiscalYearResponse = Omit<
@@ -34,7 +35,7 @@ export type CreateFiscalYearResponse = Omit<
 
 export type CreateFiscalYearFormValue = Omit<
   CreateFiscalYearRequestBase,
-  "tenant_id" | "company_id"
+  "tenant_id" | "company_id" | "created_by"
 >;
 
 //Get Lists
@@ -52,4 +53,28 @@ export interface ListFiscalYearsParams {
   tenant_id: string;
   company_id: string;
 }
-//I have to make this one union,
+// {
+//   "id": "85be43fd-dee6-40c3-a622-c4bdeb68473e",
+//   "fiscal_year_name": "FY2013",
+//   "calendar_type": "ETHIOPIAN",
+// EthioHisab — Fiscal Year API
+// 2
+//   "start_date_eth": "01-11-2012",
+//   "start_date_gre": "2020-07-08",
+//   "end_date_eth": "30-10-2013",
+//   "end_date_gre": "2021-07-07",
+//   "status": "OPEN"
+// } {
+//   "id": "85be43fd-dee6-40c3-a622-c4bdeb68473e",
+//   "fiscal_year_name": "FY2013",
+//   "calendar_type": "ETHIOPIAN",
+// EthioHisab — Fiscal Year API
+// 2
+//   "start_date_eth": "01-11-2012",
+//   "start_date_gre": "2020-07-08",
+//   "end_date_eth": "30-10-2013",
+//   "end_date_gre": "2021-07-07",
+//   "status": "OPEN"
+// }
+//Get Active List Response,
+// export type ActiveFiscalYearResponse = FiscalYear | null;

@@ -1,5 +1,5 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 import { useFiscalYear } from "../hooks/useFiscalyear";
 import type { FiscalYearList } from "../types";
 
@@ -10,9 +10,7 @@ const STATUS_COLORS: Record<FiscalYearList["status"], string> = {
 };
 
 export function FiscalYearTable() {
-  const searchParams = useSearchParams();
-  const tenantId = searchParams.get("tenant_id")!; //find a better way
-  const companyId = searchParams.get("company_id")!;
+  const { tenantId, companyId } = useTenantStore();
 
   const { fiscalYearListsAllResponse, isLoading, isError } = useFiscalYear(
     tenantId,

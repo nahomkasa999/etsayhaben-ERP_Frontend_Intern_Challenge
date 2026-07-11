@@ -29,6 +29,7 @@ function writeDb(FiscalYears: FiscalYear[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(FiscalYears));
 }
 
+//Read Fiscal Years,
 export async function fetchFiscalYearLists(
   params: ListFiscalYearsParams,
 ): Promise<FiscalYearListResponse> {
@@ -51,6 +52,11 @@ export async function fetchFiscalYearLists(
   };
 }
 
+// export async function GetActiveFiscalYear(params: ListFiscalYearsParams): Promise<ActiveFiscalYearRespons> {
+
+// }
+//create_Fiscalyear
+
 export async function CreateFiscalYear(
   Request: CreateFiscalYearRequestBase,
 ): Promise<CreateFiscalYearResponse> {
@@ -66,7 +72,6 @@ export async function CreateFiscalYear(
     ...derivedDates,
     id: crypto.randomUUID(),
     status: "OPEN",
-    created_by: "",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
