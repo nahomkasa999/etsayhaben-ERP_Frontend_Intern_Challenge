@@ -11,14 +11,15 @@ const STATUS_COLORS: Record<FiscalYearList["status"], string> = {
 
 export function FiscalYearTable() {
   const { tenantId, companyId } = useTenantStore();
+  //the activeFiscalYears and related imports and logics should be removed before commit.
+  const {
+    fiscalYearListsAllResponse,
+    fiscalYearListsIsLoading,
+    fiscalYearListsIsError,
+  } = useFiscalYear(tenantId, companyId);
 
-  const { fiscalYearListsAllResponse, isLoading, isError } = useFiscalYear(
-    tenantId,
-    companyId,
-  );
-
-  if (isLoading) return <p>Loading fiscal years...</p>;
-  if (isError)
+  if (fiscalYearListsIsLoading) return <p>Loading fiscal years...</p>;
+  if (fiscalYearListsIsError)
     return (
       <p>
         Something went loading fiscal years.{" "}

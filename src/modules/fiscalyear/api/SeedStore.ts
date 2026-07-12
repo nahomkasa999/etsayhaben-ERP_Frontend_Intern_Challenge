@@ -36,6 +36,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2023-07-10T12:00:00Z",
     closed_by: U_ALPHA_01,
     closed_at: "2023-07-10T12:00:00Z",
+    justification: "FY2015 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000002",
@@ -53,6 +54,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2024-07-08T10:00:00Z",
     closed_by: U_ALPHA_01,
     closed_at: "2024-07-08T10:00:00Z",
+    justification: "FY2016 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000003",
@@ -70,6 +72,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2025-07-09T09:00:00Z",
     closed_by: U_ALPHA_02,
     closed_at: "2025-07-09T09:00:00Z",
+    justification: "FY2017 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000004",
@@ -85,8 +88,8 @@ const SEED_DATA: FiscalYear[] = [
     created_by: U_ALPHA_02,
     created_at: "2025-06-01T08:00:00Z",
     updated_at: "2025-06-01T08:00:00Z",
-    closed_by: null,
-    closed_at: null,
+    activated_by: U_ALPHA_02,
+    activated_at: "2025-06-01T08:00:00Z",
   },
 
   // ── T_ALPHA / C_ALPHA_TRADING (3 FYs) ──────────────────────
@@ -106,6 +109,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2023-07-10T12:00:00Z",
     closed_by: U_ALPHA_01,
     closed_at: "2023-07-10T12:00:00Z",
+    justification: "FY2015 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000006",
@@ -123,6 +127,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2024-07-08T10:00:00Z",
     closed_by: U_ALPHA_01,
     closed_at: "2024-07-08T10:00:00Z",
+    justification: "FY2016 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000007",
@@ -140,6 +145,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2025-07-09T09:00:00Z",
     closed_by: U_ALPHA_02,
     closed_at: "2025-07-09T09:00:00Z",
+    justification: "FY2017 closed after annual audit",
   },
 
   // ── T_BETA / C_BETA_RETAIL (3 FYs) ──────────────────────────
@@ -159,6 +165,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2023-07-10T12:00:00Z",
     closed_by: U_BETA_01,
     closed_at: "2023-07-10T12:00:00Z",
+    justification: "FY2015 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000009",
@@ -176,6 +183,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2024-07-08T10:00:00Z",
     closed_by: U_BETA_01,
     closed_at: "2024-07-08T10:00:00Z",
+    justification: "FY2016 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000010",
@@ -191,8 +199,9 @@ const SEED_DATA: FiscalYear[] = [
     created_by: U_BETA_01,
     created_at: "2024-06-01T08:00:00Z",
     updated_at: "2026-02-20T14:00:00Z",
-    closed_by: null,
-    closed_at: null,
+    reopened_by: U_BETA_01,
+    reopened_at: "2026-02-20T14:00:00Z",
+    reopen_expires_at: "2026-02-27T14:00:00Z",
     justification: "Inventory reconciliation required before final close",
   },
 
@@ -213,6 +222,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2024-07-08T10:00:00Z",
     closed_by: U_GAMMA_01,
     closed_at: "2024-07-08T10:00:00Z",
+    justification: "FY2016 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000012",
@@ -230,6 +240,7 @@ const SEED_DATA: FiscalYear[] = [
     updated_at: "2025-07-09T09:00:00Z",
     closed_by: U_GAMMA_01,
     closed_at: "2025-07-09T09:00:00Z",
+    justification: "FY2017 closed after annual audit",
   },
   {
     id: "a1000000-0000-4000-a000-000000000013",
@@ -245,8 +256,8 @@ const SEED_DATA: FiscalYear[] = [
     created_by: U_GAMMA_01,
     created_at: "2025-06-01T08:00:00Z",
     updated_at: "2025-06-01T08:00:00Z",
-    closed_by: null,
-    closed_at: null,
+    activated_by: U_GAMMA_01,
+    activated_at: "2025-06-01T08:00:00Z",
   },
 ];
 
