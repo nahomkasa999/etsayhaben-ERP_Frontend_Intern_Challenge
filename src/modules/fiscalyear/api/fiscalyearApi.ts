@@ -44,7 +44,10 @@ function writeDb(fiscalYears: FiscalYear[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(fiscalYears));
 }
 
-function getFiscalYearsForCompany(tenant_id: string, company_id: string) {
+function getFiscalYearsForCompany(
+  tenant_id: string,
+  company_id: string,
+): FiscalYear[] {
   const fiscalYears = readDb();
   return fiscalYears.filter(
     (fy) => fy.tenant_id === tenant_id && fy.company_id === company_id,
@@ -78,6 +81,23 @@ export async function CreateFiscalYear(
   writeDb([...fiscalYears, newFiscalYear]);
 
   return newFiscalYear;
+}
+
+//Read Single Fiscal Year
+export async function fetchFiscalYearById(
+  id: string,
+  params: FiscalYearByDateParams,
+): Promise<FiscalYear | undefined> {
+  await delay(400);
+  const fiscalYears = getFiscalYearsForCompany(
+    params.tenant_id,
+    params.company_id,
+  );
+  const index = fiscalYears.findIndex((fy) => fy.id === id);
+  if (index === -1) {
+    return;
+  }
+  return fiscalYears[index];
 }
 
 //Read Fiscal Years,

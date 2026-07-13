@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   CreateFiscalYearFormValue,
   CreateFiscalYearRequestBase,
+  FiscalYear,
 } from "../types";
 import { useAuthStore, useTenantStore } from "../store/FiscalYearStore";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
-import { CreateFiscalYear } from "../api/fiscalyearApi";
+import { CreateFiscalYear, UpdateFiscalYear } from "../api/fiscalyearApi";
 import { useQueryClient } from "@tanstack/react-query";
 const DEFAULT_VALUE: CreateFiscalYearFormValue = {
   fiscal_year_name: "",
@@ -17,14 +18,30 @@ const DEFAULT_VALUE: CreateFiscalYearFormValue = {
   end_date: "",
 };
 
-export function FiscalYearForm() {
+function toFormValue(fy?: FiscalYear): CreateFiscalYearFormValue {
+  if (!fy) return DEFAULT_VALUE;
+  return {
+    fiscal_year_name: fy.fiscal_year_name,
+    calendar_type: fy.calendar_type,
+    start_date: fy.start_date_eth,
+    end_date: fy.end_date_eth,
+  };
+}
+
+type Props = {
+  initialValues?: FiscalYear;
+  mode: "create" | "edit";
+};
+
+export function FiscalYearForm({ initialValues, mode }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [values, setValues] =
-    useState<CreateFiscalYearFormValue>(DEFAULT_VALUE);
+  const [values, setValues] = useState<CreateFiscalYearFormValue>(
+    toFormValue(initialValues),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverErrors, setServerErrors] = useState("");
-  const isEthiopianCalender = values.calendar_type === "ETHIOPIAN";
+  const isEthiopianCalendar = values.calendar_type === "ETHIOPIAN";
   const { tenantId, companyId } = useTenantStore();
   const { userId } = useAuthStore();
 
@@ -54,8 +71,22 @@ export function FiscalYearForm() {
     setErrors({});
     setServerErrors("");
     try {
-      const retursn = await CreateFiscalYear(requestBody);
-      console.log(retursn);
+      if (mode === "create") {
+        await CreateFiscalYear(requestBody);
+      } else if (initialValues) {
+        await UpdateFiscalYear({
+          id: initialValues.id,
+          updated_by: userId,
+          params: {
+            tenant_id: tenantId,
+            company_id: companyId,
+            fiscal_year_name: values.fiscal_year_name,
+            start_date: values.start_date,
+            end_date: values.end_date,
+            updated_by: userId,
+          },
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
       router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
     } catch (error) {
@@ -113,7 +144,7 @@ export function FiscalYearForm() {
           name="start_date"
           value={values.start_date}
           onChange={(e) => handleChange("start_date", e.target.value)}
-          placeholder={isEthiopianCalender ? "01-11-2012" : "2024-09-11"}
+          placeholder={isEthiopianCalendar ? "01-11-2012" : "2024-09-11"}
           className="w-full rounded border px-3 py-2"
         />
         {errors.start_date && (
@@ -128,20 +159,21 @@ export function FiscalYearForm() {
           name="end_date"
           value={values.end_date}
           onChange={(e) => handleChange("end_date", e.target.value)}
-          placeholder={isEthiopianCalender ? "30-10-2013" : "2025-09-10"}
+          placeholder={isEthiopianCalendar ? "30-10-2013" : "2025-09-10"}
           className="w-full rounded border px-3 py-2"
         />
         {errors.end_date && (
           <p className="mt-1 text-sm text-red-500">{errors.end_date}</p>
         )}
       </div>
-
-      <button
-        type="submit"
-        className="rounded bg-blue-600 px-4 py-2 text-white"
-      >
-        Create
-      </button>
+      <div>
+        <button
+          type="submit"
+          className="rounded bg-blue-600 px-4 py-2 text-white"
+        >
+          {mode === "create" ? "Create" : "Save Changes"}
+        </button>
+      </div>
     </form>
   );
 }

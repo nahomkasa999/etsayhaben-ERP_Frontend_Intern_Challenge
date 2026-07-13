@@ -1,17 +1,11 @@
 "use client";
 import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 import { useFiscalYear } from "../hooks/useFiscalyear";
-import type { FiscalYearList } from "../types";
-
-const STATUS_COLORS: Record<FiscalYearList["status"], string> = {
-  OPEN: "bg-green-100 text-green-800",
-  CLOSED: "bg-gray-100 text-gray-800",
-  REOPENED: "bg-yellow-100 text-yellow-800",
-};
+import { FiscalYearDetails } from "./FiscalYearDetails";
 
 export function FiscalYearTable() {
   const { tenantId, companyId } = useTenantStore();
-  //the activeFiscalYears and related imports and logics should be removed before commit.
+
   const {
     fiscalYearListsAllResponse,
     fiscalYearListsIsLoading,
@@ -22,7 +16,7 @@ export function FiscalYearTable() {
   if (fiscalYearListsIsError)
     return (
       <p>
-        Something went loading fiscal years.{" "}
+        Something went wrong loading fiscal years.{" "}
         <button onClick={() => location.reload()}>Retry</button>
       </p>
     );
@@ -36,25 +30,17 @@ export function FiscalYearTable() {
             <th className="p-2">Status</th>
             <th className="p-2">Start Date</th>
             <th className="p-2">End Date</th>
+            <th className="p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
           {fiscalYearListsAllResponse?.results.map((fiscalYear) => (
-            <tr
+            <FiscalYearDetails
               key={fiscalYear.id}
-              className="border-b"
-            >
-              <td className="p-2">{fiscalYear.fiscal_year_name}</td>
-              <td className="p-2">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[fiscalYear.status]}`}
-                >
-                  {fiscalYear.status}
-                </span>
-              </td>
-              <td className="p-2">{fiscalYear.start_date_eth}</td>
-              <td className="p-2">{fiscalYear.end_date_eth}</td>
-            </tr>
+              fiscalYear={fiscalYear}
+              tenantId={tenantId}
+              companyId={companyId}
+            />
           ))}
         </tbody>
       </table>
