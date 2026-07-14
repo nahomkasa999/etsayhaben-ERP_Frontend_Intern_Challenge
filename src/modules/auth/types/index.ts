@@ -1,5 +1,4 @@
 import { z } from "zod";
-import sanitizeHtml from "sanitize-html";
 
 export const signUpSchema = z
   .object({
@@ -7,9 +6,7 @@ export const signUpSchema = z
       .email({
         message: "Invalid email address.",
       })
-      .transform((val) =>
-        sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} }),
-      ),
+      .transform((val) => val.trim()),
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
@@ -19,16 +16,11 @@ export const signUpSchema = z
       .regex(
         /[@$!%*?&#]/,
         "Password must contain at least one special character",
-      )
-      .transform((val) =>
-        sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} }),
       ),
     name: z
       .string()
       .min(3, "Name must be at least 3 characters")
-      .transform((val) =>
-        sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} }),
-      ),
+      .transform((val) => val.trim()),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -37,18 +29,11 @@ export const signUpSchema = z
   });
 
 export const signInSchema = z.object({
-  email: z
-    .email()
-    .transform((val) =>
-      sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} }),
-    ),
+  email: z.email().transform((val) => val.trim()),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
-    .max(30, "Password must be at most 30 characters")
-    .transform((val) =>
-      sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} }),
-    ),
+    .max(30, "Password must be at most 30 characters"),
 });
 
 export type AuthUser = {

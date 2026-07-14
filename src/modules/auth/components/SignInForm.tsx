@@ -8,6 +8,7 @@ import { formatFieldErrors } from "@/modules/auth/services/authService";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -17,6 +18,7 @@ import {
 } from "@/shared/components/ui/card";
 
 export default function SignInForm() {
+  const router = useRouter();
   const { signIn, isLoading, error, setError } = useAuth();
 
   const form = useForm({
@@ -32,6 +34,7 @@ export default function SignInForm() {
         email: value.email,
         password: value.password,
       });
+      router.push("/dashboard");
     },
   });
 
@@ -49,7 +52,7 @@ export default function SignInForm() {
               setError(null);
               form.handleSubmit();
             }}
-            className="space-y-3"
+            className="flex flex-col gap-4"
             method="POST"
             autoComplete="off"
           >
@@ -59,7 +62,7 @@ export default function SignInForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Email</Label>
                     <Input
                       id={field.name}
@@ -87,7 +90,7 @@ export default function SignInForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Password</Label>
                     <Input
                       id={field.name}

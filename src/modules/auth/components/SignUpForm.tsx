@@ -8,6 +8,7 @@ import { formatFieldErrors } from "@/modules/auth/services/authService";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import {
 } from "@/shared/components/ui/card";
 
 export default function SignUpForm() {
+  const router = useRouter();
   const { signUp, isLoading, error, setError } = useAuth();
 
   const form = useForm({
@@ -35,6 +37,7 @@ export default function SignUpForm() {
         email: value.email,
         password: value.password,
       });
+      router.push("/dashboard");
     },
   });
 
@@ -52,7 +55,7 @@ export default function SignUpForm() {
               setError(null);
               form.handleSubmit();
             }}
-            className="space-y-3"
+            className="flex flex-col gap-4"
             method="POST"
             autoComplete="off"
           >
@@ -62,7 +65,7 @@ export default function SignUpForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Full name</Label>
                     <Input
                       id={field.name}
@@ -88,7 +91,7 @@ export default function SignUpForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Email</Label>
                     <Input
                       id={field.name}
@@ -116,7 +119,7 @@ export default function SignUpForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Password</Label>
                     <Input
                       id={field.name}
@@ -144,7 +147,7 @@ export default function SignUpForm() {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor={field.name}>Confirm Password</Label>
                     <Input
                       id={field.name}
