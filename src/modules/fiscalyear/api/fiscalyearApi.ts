@@ -118,6 +118,8 @@ export async function fetchFiscalYearLists(
       status: fy.status,
       start_date_eth: fy.start_date_eth,
       end_date_eth: fy.end_date_eth,
+      start_date_gre: fy.start_date_gre,
+      end_date_gre: fy.end_date_gre,
     })),
   };
 }

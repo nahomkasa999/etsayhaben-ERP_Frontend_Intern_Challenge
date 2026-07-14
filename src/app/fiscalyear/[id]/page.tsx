@@ -6,7 +6,8 @@ import { fetchFiscalYearById } from "@/modules/fiscalyear/api/fiscalyearApi";
 import { FiscalYearForm } from "@/modules/fiscalyear/components/FiscalYearForm";
 import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 import { useSearchParams } from "next/navigation";
-import { FiscalYear } from "@/modules/fiscalyear/types";
+import { FiscalYearActions } from "@/modules/fiscalyear/components/FiscalYearActions";
+import type { FiscalYear } from "@/modules/fiscalyear/types";
 
 export default function EditFiscalYearPage() {
   //finding query params
@@ -27,7 +28,7 @@ export default function EditFiscalYearPage() {
   });
 
   if (isLoading) return <p>Loading...</p>;
-  if (!fiscalYear) return <p>Fiscal year not found.</p>;
+  if (!fiscalYear || "details" in fiscalYear) return <p>Fiscal year not found.</p>;
 
   return (
     <div>
@@ -36,6 +37,9 @@ export default function EditFiscalYearPage() {
         mode="edit"
         initialValues={fiscalYear}
       />
+      <hr className="my-6" />
+      <h2 className="text-lg font-semibold mb-3">Danger Zone</h2>
+      <FiscalYearActions fiscalYear={fiscalYear} />
     </div>
   );
 }

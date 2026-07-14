@@ -61,11 +61,11 @@ function pad(n: number): string {
 function ethiopianToGregorian(ethDateStr: string): string {
   const [day, month, year] = ethDateStr.split("-").map(Number);
   const g = ethToGreg(year, month, day);
-  return `${g.getFullYear()}-${pad(g.getMonth() + 1)}-${pad(g.getDate())}`;
+  return `${pad(g.getDate())}-${pad(g.getMonth() + 1)}-${g.getFullYear()}`;
 }
 
 function gregorianToEthiopian(greDateStr: string): string {
-  const [year, month, day] = greDateStr.split("-").map(Number);
+  const [day, month, year] = greDateStr.split("-").map(Number);
   const e = gregToEth(new Date(`${year}-${pad(month)}-${pad(day)}`));
   return `${pad(e.day)}-${pad(e.month)}-${e.year}`;
 }

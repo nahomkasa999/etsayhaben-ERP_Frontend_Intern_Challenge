@@ -1,16 +1,18 @@
 "use client";
-import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
+import { useState } from "react";
 import { useFiscalYear } from "../hooks/useFiscalyear";
 import { FiscalYearDetails } from "./FiscalYearDetails";
 
+type CalendarView = "ETHIOPIAN" | "GREGORIAN";
+
 export function FiscalYearTable() {
-  const { tenantId, companyId } = useTenantStore();
+  const [calendarView, setCalendarView] = useState<CalendarView>("ETHIOPIAN");
 
   const {
     fiscalYearListsAllResponse,
     fiscalYearListsIsLoading,
     fiscalYearListsIsError,
-  } = useFiscalYear(tenantId, companyId);
+  } = useFiscalYear();
 
   if (fiscalYearListsIsLoading) return <p>Loading fiscal years...</p>;
   if (fiscalYearListsIsError)
@@ -23,13 +25,25 @@ export function FiscalYearTable() {
 
   return (
     <div>
+      <div className="mb-3 flex items-center gap-2">
+        <label className="text-sm text-gray-600">Calendar:</label>
+        <select
+          value={calendarView}
+          onChange={(e) => setCalendarView(e.target.value as CalendarView)}
+          className="rounded border px-3 py-1 text-sm"
+        >
+          <option value="ETHIOPIAN">Ethiopian</option>
+          <option value="GREGORIAN">Gregorian</option>
+        </select>
+      </div>
+
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b font-semibold">
             <th className="p-2">Fiscal Year</th>
             <th className="p-2">Status</th>
-            <th className="p-2">Start Date</th>
-            <th className="p-2">End Date</th>
+            <th className="p-2">Start Date{calendarView === "ETHIOPIAN" ? " (Eth)" : " (Gre)"}</th>
+            <th className="p-2">End Date{calendarView === "ETHIOPIAN" ? " (Eth)" : " (Gre)"}</th>
             <th className="p-2">Actions</th>
           </tr>
         </thead>
@@ -38,8 +52,7 @@ export function FiscalYearTable() {
             <FiscalYearDetails
               key={fiscalYear.id}
               fiscalYear={fiscalYear}
-              tenantId={tenantId}
-              companyId={companyId}
+              calendarView={calendarView}
             />
           ))}
         </tbody>

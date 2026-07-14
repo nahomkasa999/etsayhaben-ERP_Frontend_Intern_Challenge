@@ -2,15 +2,10 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CreateFiscalYearFormValue,
-  CreateFiscalYearRequestBase,
-  FiscalYear,
-} from "../types";
-import { useAuthStore, useTenantStore } from "../store/FiscalYearStore";
+import type { CreateFiscalYearFormValue, FiscalYear } from "../types";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
-import { CreateFiscalYear, UpdateFiscalYear } from "../api/fiscalyearApi";
-import { useQueryClient } from "@tanstack/react-query";
+import { useFiscalYear } from "../hooks/useFiscalyear";
+
 const DEFAULT_VALUE: CreateFiscalYearFormValue = {
   fiscal_year_name: "",
   calendar_type: "ETHIOPIAN",
@@ -35,22 +30,31 @@ type Props = {
 
 export function FiscalYearForm({ initialValues, mode }: Props) {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const { createFiscalYear, updateFiscalYear } = useFiscalYear();
   const [values, setValues] = useState<CreateFiscalYearFormValue>(
     toFormValue(initialValues),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverErrors, setServerErrors] = useState("");
   const isEthiopianCalendar = values.calendar_type === "ETHIOPIAN";
-  const { tenantId, companyId } = useTenantStore();
-  const { userId } = useAuthStore();
 
   function handleChange(
     field: keyof CreateFiscalYearFormValue,
     value: string | number,
   ) {
-    setValues((prev) => ({ ...prev, [field]: value }));
+    if (field === "calendar_type" && initialValues) {
+      const newType = value as "ETHIOPIAN" | "GREGORIAN";
+      setValues((prev) => ({
+        ...prev,
+        calendar_type: newType,
+        start_date: newType === "ETHIOPIAN" ? initialValues.start_date_eth : initialValues.start_date_gre,
+        end_date: newType === "ETHIOPIAN" ? initialValues.end_date_eth : initialValues.end_date_gre,
+      }));
+    } else {
+      setValues((prev) => ({ ...prev, [field]: value }));
+    }
   }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
@@ -59,36 +63,19 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
       setErrors(validationErrors);
       return;
     }
-    console.log("v:", validationErrors);
 
-    const requestBody: CreateFiscalYearRequestBase = {
-      ...values,
-      tenant_id: tenantId,
-      company_id: companyId,
-      created_by: userId,
-    };
-    console.log(requestBody);
     setErrors({});
     setServerErrors("");
+
     try {
       if (mode === "create") {
-        await CreateFiscalYear(requestBody);
+        console.log("creating:", values);
+        await createFiscalYear(values);
       } else if (initialValues) {
-        await UpdateFiscalYear({
-          id: initialValues.id,
-          updated_by: userId,
-          params: {
-            tenant_id: tenantId,
-            company_id: companyId,
-            fiscal_year_name: values.fiscal_year_name,
-            start_date: values.start_date,
-            end_date: values.end_date,
-            updated_by: userId,
-          },
-        });
+        console.log("updating:", initialValues);
+        await updateFiscalYear(initialValues.id, values);
       }
-      queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
-      router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+      router.push(`/fiscalyear`);
     } catch (error) {
       setServerErrors(
         error instanceof Error ? error.message : "Something went wrong",
@@ -144,7 +131,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           name="start_date"
           value={values.start_date}
           onChange={(e) => handleChange("start_date", e.target.value)}
-          placeholder={isEthiopianCalendar ? "01-11-2012" : "2024-09-11"}
+          placeholder="01-11-2012"
           className="w-full rounded border px-3 py-2"
         />
         {errors.start_date && (
@@ -159,13 +146,14 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           name="end_date"
           value={values.end_date}
           onChange={(e) => handleChange("end_date", e.target.value)}
-          placeholder={isEthiopianCalendar ? "30-10-2013" : "2025-09-10"}
+          placeholder="30-10-2013"
           className="w-full rounded border px-3 py-2"
         />
         {errors.end_date && (
           <p className="mt-1 text-sm text-red-500">{errors.end_date}</p>
         )}
       </div>
+
       <div>
         <button
           type="submit"

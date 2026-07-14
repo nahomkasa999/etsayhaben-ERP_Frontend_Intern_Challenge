@@ -69,6 +69,8 @@ export interface FiscalYearList {
   status: "OPEN" | "CLOSED" | "REOPENED";
   start_date_eth: string;
   end_date_eth: string;
+  start_date_gre: string;
+  end_date_gre: string;
 }
 
 export interface FiscalYearListResponse {
