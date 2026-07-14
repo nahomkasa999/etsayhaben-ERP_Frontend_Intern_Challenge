@@ -1,17 +1,17 @@
-// ── ROUTING ──────────────────────────────────────────────────────
-// Wraps EVERY page. This is where global providers and the Navbar live.
-
 import { QueryProvider } from '@/providers/QueryProvider'
-import { Navbar } from '@/shared/components/layout/Navbar'
 import './globals.css'
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body>
         <QueryProvider>
-          <Navbar />
-          <main className="p-6">{children}</main>
+          {children}
         </QueryProvider>
       </body>
     </html>
