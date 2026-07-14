@@ -1,4 +1,13 @@
+"use client";
+
+import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
+import { signUpSchema } from "@/modules/auth/types";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { formatFieldErrors } from "@/modules/auth/services/authService";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Card,
   CardContent,
@@ -6,11 +15,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import { Button } from "@/shared/components/ui/button";
 
 export default function SignUpForm() {
+  const { signUp, isLoading, error, setError } = useAuth();
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    validators: {
+      onSubmit: signUpSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await signUp({
+        name: value.name,
+        email: value.email,
+        password: value.password,
+      });
+    },
+  });
+
   return (
     <div className="h-screen flex items-center justify-center px-2">
       <Card className="z-10 w-[450px] mx-auto">
@@ -19,36 +46,145 @@ export default function SignUpForm() {
           <CardDescription>Create an account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-3">
-            <div>
-              <Label htmlFor="name">Full name</Label>
-              <Input
-                id="name"
-                placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@adress.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="....."
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-            >
-              Sign Up
-            </Button>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setError(null);
+              form.handleSubmit();
+            }}
+            className="space-y-3"
+            method="POST"
+            autoComplete="off"
+          >
+            <form.Field
+              name="name"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <div>
+                    <Label htmlFor={field.name}>Full name</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      placeholder="John Doe"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <p className="text-sm text-destructive">
+                        {formatFieldErrors(field.state.meta.errors)}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <form.Field
+              name="email"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <div>
+                    <Label htmlFor={field.name}>Email</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="email@address.com"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <p className="text-sm text-destructive">
+                        {formatFieldErrors(field.state.meta.errors)}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <form.Field
+              name="password"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <div>
+                    <Label htmlFor={field.name}>Password</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="....."
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <p className="text-sm text-destructive">
+                        {formatFieldErrors(field.state.meta.errors)}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <form.Field
+              name="confirmPassword"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <div>
+                    <Label htmlFor={field.name}>Confirm Password</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="....."
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <p className="text-sm text-destructive">
+                        {formatFieldErrors(field.state.meta.errors)}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <form.Subscribe
+              selector={(state) => [state.isSubmitting]}
+              children={([isSubmitting]) => (
+                <div className="flex flex-col gap-2">
+                  {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting || isLoading}
+                  >
+                    {isSubmitting || isLoading
+                      ? "Creating account..."
+                      : "Sign Up"}
+                  </Button>
+                </div>
+              )}
+            />
             <p className="text-sm text-center text-muted-foreground">
               Already have an account?{" "}
               <Link

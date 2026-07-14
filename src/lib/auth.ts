@@ -4,8 +4,12 @@ import { organization } from "better-auth/plugins";
 import prisma from "@/lib/db";
 
 export const auth = betterAuth({
+  basePath: "/api/v1/auth",
   database: prismaAdapter(prisma, {
-    provider: "postgresql", // or "mysql", "postgresql", ...etc
+    provider: "postgresql",
   }),
+  emailAndPassword: {
+    enabled: true,
+  },
   plugins: [organization()],
 });
