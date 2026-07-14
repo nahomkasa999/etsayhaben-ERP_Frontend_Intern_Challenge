@@ -225,15 +225,20 @@ export interface DeleteFiscalYearFormValue {
   deleted_by: string;
 }
 
-export interface DeleteFiscalYearResponse {
-  id: string;
-  status: "DELETED";
-  deleted_by: string;
-  deleted_at: string;
-}
-
 export interface DeleteFiscalYearParams {
   id: string;
   deleted_by: string;
   params: DeleteFiscalYearRequestBase;
+}
+
+export class FiscalYearApiError extends Error {
+  status: number;
+  detail: string;
+
+  constructor(detail: string, status = 400) {
+    super(detail);
+    this.name = "FiscalYearApiError";
+    this.detail = detail;
+    this.status = status;
+  }
 }

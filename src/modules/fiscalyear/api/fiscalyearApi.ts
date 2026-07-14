@@ -18,7 +18,7 @@ import {
   ReopenFiscalYearParams,
   ReopenFiscalYearResponse,
   DeleteFiscalYearParams,
-  DeleteFiscalYearResponse,
+  FiscalYearApiError,
 } from "../types";
 
 import SEED_DATA from "./SeedStore";
@@ -57,11 +57,11 @@ function getFiscalYearsForCompany(
 
 export async function CreateFiscalYear(
   request: CreateFiscalYearRequestBase,
-): Promise<CreateFiscalYearResponse | Record<string, string>> {
+): Promise<CreateFiscalYearResponse> {
   await delay(400);
 
   if (new Date(request.start_date) >= new Date(request.end_date)) {
-    return { detail: "start_date must be before end_date." };
+    throw new FiscalYearApiError("start_date must be before end_date.", 422);
   }
 
   const fiscalYears = readDb();
@@ -88,13 +88,19 @@ export async function CreateFiscalYear(
 export async function fetchFiscalYearById(
   id: string,
   params: ListFiscalYearsParams,
-): Promise<FiscalYear | undefined> {
+): Promise<FiscalYear> {
   await delay(400);
   const fiscalYears = getFiscalYearsForCompany(
     params.tenant_id,
     params.company_id,
   );
-  return fiscalYears.find((fy) => fy.id === id);
+  const fiscalYear = fiscalYears.find((fy) => fy.id === id);
+
+  if (!fiscalYear) {
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
+  }
+
+  return fiscalYear;
 }
 
 //Read Fiscal Years,
@@ -123,7 +129,7 @@ export async function fetchFiscalYearLists(
 
 export async function GetActiveFiscalYear(
   params: ListFiscalYearsParams,
-): Promise<ActiveFiscalYearResponse | Record<string, string>> {
+): Promise<ActiveFiscalYearResponse> {
   await delay(400);
   const fiscalYears = getFiscalYearsForCompany(
     params.tenant_id,
@@ -131,14 +137,14 @@ export async function GetActiveFiscalYear(
   );
   const active = fiscalYears.find((fy) => fy.status === "OPEN");
   if (!active) {
-    return { detail: "No active fiscal year found." };
+    throw new FiscalYearApiError("No active fiscal year found.", 404);
   }
   return active;
 }
 
 export async function GetFiscalYearByDate(
   params: FiscalYearByDateParams,
-): Promise<FiscalYearList | Record<string, string>> {
+): Promise<FiscalYearList> {
   await delay(400);
   const fiscalYears: FiscalYear[] = getFiscalYearsForCompany(
     params.tenant_id,
@@ -162,10 +168,12 @@ export async function GetFiscalYearByDate(
   });
 
   if (!result) {
-    return {
-      detail: "No fiscal year found for the given date.",
-    };
+    throw new FiscalYearApiError(
+      "No fiscal year found for the given date.",
+      404,
+    );
   }
+
   return {
     id: result.id,
     fiscal_year_name: result.fiscal_year_name,
@@ -182,9 +190,7 @@ export async function UpdateFiscalYear({
   id,
   updated_by,
   params,
-}: UpdateFiscalYearParams): Promise<
-  UpdateFiscalYearResponse | Record<string, string>
-> {
+}: UpdateFiscalYearParams): Promise<UpdateFiscalYearResponse> {
   await delay(400);
 
   const fiscalYears = readDb();
@@ -196,9 +202,7 @@ export async function UpdateFiscalYear({
   );
 
   if (index === -1) {
-    return {
-      detail: "No fiscal year found for the given id.",
-    };
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
   }
 
   const existing = fiscalYears[index];
@@ -240,9 +244,7 @@ export async function ActivateFiscalYear({
   id,
   activated_by,
   params,
-}: ActivateFiscalYearParams): Promise<
-  ActivateFiscalYearResponse | Record<string, string>
-> {
+}: ActivateFiscalYearParams): Promise<ActivateFiscalYearResponse> {
   await delay(400);
   const fiscalYears = readDb();
   const index = fiscalYears.findIndex(
@@ -253,18 +255,15 @@ export async function ActivateFiscalYear({
   );
 
   if (index === -1) {
-    return {
-      detail: "No fiscal year found for the given id.",
-    };
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
   }
 
   const existing = fiscalYears[index];
 
   if (existing.status === "OPEN") {
-    return {
-      detail: "Fiscal year is already Active.",
-    };
+    throw new FiscalYearApiError("Fiscal year is already Active.", 409);
   }
+
   const updated: FiscalYear = {
     ...existing,
     status: "OPEN",
@@ -285,9 +284,7 @@ export async function CloseFiscalYear({
   id,
   closed_by,
   params,
-}: CloseFiscalYearParams): Promise<
-  CloseFiscalYearResponse | Record<string, string>
-> {
+}: CloseFiscalYearParams): Promise<CloseFiscalYearResponse> {
   await delay(400);
   const fiscalYears = readDb();
   const index = fiscalYears.findIndex(
@@ -298,17 +295,14 @@ export async function CloseFiscalYear({
   );
 
   if (index === -1) {
-    return {
-      detail: "No fiscal year found for the given id.",
-    };
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
   }
 
   const existing = fiscalYears[index];
   if (existing.status === "CLOSED") {
-    return {
-      detail: "Fiscal year is already Closed.",
-    };
+    throw new FiscalYearApiError("Fiscal year is already Closed.", 409);
   }
+
   const updated: FiscalYear = {
     ...existing,
     status: "CLOSED",
@@ -331,9 +325,7 @@ export async function ReopenFiscalYear({
   id,
   reopened_by,
   params,
-}: ReopenFiscalYearParams): Promise<
-  ReopenFiscalYearResponse | Record<string, string>
-> {
+}: ReopenFiscalYearParams): Promise<ReopenFiscalYearResponse> {
   await delay(400);
   const fiscalYears = readDb();
   const index = fiscalYears.findIndex(
@@ -344,24 +336,21 @@ export async function ReopenFiscalYear({
   );
 
   if (index === -1) {
-    return {
-      detail: "No fiscal year found for the given id.",
-    };
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
   }
 
   const existing = fiscalYears[index];
   if (existing.status === "REOPENED") {
-    return {
-      detail: "Fiscal year is already Reopened.",
-    };
+    throw new FiscalYearApiError("Fiscal year is already Reopened.", 409);
   }
 
   if (existing.reopened_at) {
-    return {
-      detail:
-        "This fiscal year has already been reopened once and cannot be reopened again.",
-    };
+    throw new FiscalYearApiError(
+      "This fiscal year has already been reopened once and cannot be reopened again.",
+      409,
+    );
   }
+
   const updated: FiscalYear = {
     ...existing,
     status: "REOPENED",
@@ -389,7 +378,7 @@ export async function DeleteFiscalYear({
   id,
   deleted_by,
   params,
-}: DeleteFiscalYearParams) {
+}: DeleteFiscalYearParams): Promise<Record<string, string>> {
   await delay(400);
   const fiscalYears = readDb();
 
@@ -401,9 +390,7 @@ export async function DeleteFiscalYear({
   );
 
   if (index === -1) {
-    return {
-      detail: "No fiscal year found for the given id.",
-    };
+    throw new FiscalYearApiError("No fiscal year found for the given id.", 404);
   }
 
   const remaining = fiscalYears.filter((fy) => fy.id !== id);

@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFiscalYear } from "../hooks/useFiscalyear";
+import { useTenantStore } from "../store/FiscalYearStore";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { FiscalYearApiError } from "../types";
 import type { FiscalYearList } from "../types";
 
 type DialogConfig = {
@@ -23,6 +25,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   const router = useRouter();
   const { deleteFiscalYear, closeFiscalYear, reopenFiscalYear } =
     useFiscalYear();
+  const { tenantId, companyId } = useTenantStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
 
@@ -41,13 +44,21 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("delete");
         try {
           await deleteFiscalYear(fiscalYear.id);
-          router.push("/fiscalyear");
-        } catch {
-          setDialog({
-            title: "Error",
-            message: "Failed to delete fiscal year.",
-            variant: "alert",
-          });
+          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+        } catch (error) {
+          if (error instanceof FiscalYearApiError) {
+            setDialog({
+              title: "Error",
+              message: error.detail,
+              variant: "alert",
+            });
+          } else {
+            setDialog({
+              title: "Error",
+              message: "Failed to delete fiscal year.",
+              variant: "alert",
+            });
+          }
         } finally {
           setLoading(null);
         }
@@ -68,13 +79,21 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("close");
         try {
           await closeFiscalYear(fiscalYear.id, justification);
-          router.push("/fiscalyear");
-        } catch {
-          setDialog({
-            title: "Error",
-            message: "Failed to close fiscal year.",
-            variant: "alert",
-          });
+          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+        } catch (error) {
+          if (error instanceof FiscalYearApiError) {
+            setDialog({
+              title: "Error",
+              message: error.detail,
+              variant: "alert",
+            });
+          } else {
+            setDialog({
+              title: "Error",
+              message: "Failed to close fiscal year.",
+              variant: "alert",
+            });
+          }
         } finally {
           setLoading(null);
         }
@@ -93,14 +112,23 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         closeDialog();
         setLoading("reopen");
         try {
-          await reopenFiscalYear(fiscalYear.id, justification);
-          router.push("/fiscalyear");
-        } catch {
-          setDialog({
-            title: "Error",
-            message: "Failed to reopen fiscal year.",
-            variant: "alert",
-          });
+          const reopened = await reopenFiscalYear(fiscalYear.id, justification);
+          console.log("reopened:", reopened);
+          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+        } catch (error) {
+          if (error instanceof FiscalYearApiError) {
+            setDialog({
+              title: "Error",
+              message: error.detail,
+              variant: "alert",
+            });
+          } else {
+            setDialog({
+              title: "Error",
+              message: "Failed to reopen fiscal year.",
+              variant: "alert",
+            });
+          }
         } finally {
           setLoading(null);
         }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CreateFiscalYearFormValue, FiscalYear } from "../types";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
 import { useFiscalYear } from "../hooks/useFiscalyear";
+import { useTenantStore } from "../store/FiscalYearStore";
 
 const DEFAULT_VALUE: CreateFiscalYearFormValue = {
   fiscal_year_name: "",
@@ -40,12 +41,14 @@ type Props = {
 export function FiscalYearForm({ initialValues, mode }: Props) {
   const router = useRouter();
   const { createFiscalYear, updateFiscalYear } = useFiscalYear();
+  const { tenantId, companyId } = useTenantStore();
   const [values, setValues] = useState<CreateFiscalYearFormValue>(
     toFormValue(initialValues),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverErrors, setServerErrors] = useState("");
   const isEthiopianCalendar = values.calendar_type === "ETHIOPIAN";
+  const isReadOnly = mode === "edit" && initialValues?.status === "CLOSED";
 
   function handleChange(
     field: keyof CreateFiscalYearFormValue,
@@ -87,7 +90,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
         console.log("updating:", initialValues);
         await updateFiscalYear(initialValues.id, values);
       }
-      router.push(`/fiscalyear`);
+      router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
     } catch (error) {
       setServerErrors(
         error instanceof Error ? error.message : "Something went wrong",
@@ -112,8 +115,9 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           name="fiscal_year_name"
           value={values.fiscal_year_name}
           onChange={(e) => handleChange("fiscal_year_name", e.target.value)}
-          className="w-full rounded border px-3 py-2"
+          className="w-full rounded border px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
           placeholder="FY2013"
+          disabled={isReadOnly}
         />
         {errors.fiscal_year_name && (
           <p className="mt-1 text-sm text-red-500">{errors.fiscal_year_name}</p>
@@ -144,7 +148,8 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           value={values.start_date}
           onChange={(e) => handleChange("start_date", e.target.value)}
           placeholder="01-11-2012"
-          className="w-full rounded border px-3 py-2"
+          className="w-full rounded border px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={isReadOnly}
         />
         {errors.start_date && (
           <p className="mt-1 text-sm text-red-500">{errors.start_date}</p>
@@ -159,21 +164,24 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           value={values.end_date}
           onChange={(e) => handleChange("end_date", e.target.value)}
           placeholder="30-10-2013"
-          className="w-full rounded border px-3 py-2"
+          className="w-full rounded border px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={isReadOnly}
         />
         {errors.end_date && (
           <p className="mt-1 text-sm text-red-500">{errors.end_date}</p>
         )}
       </div>
 
-      <div>
-        <button
-          type="submit"
-          className="rounded bg-blue-600 px-4 py-2 text-white"
-        >
-          {mode === "create" ? "Create" : "Save Changes"}
-        </button>
-      </div>
+      {!(mode === "edit" && initialValues?.status === "CLOSED") && (
+        <div>
+          <button
+            type="submit"
+            className="rounded bg-blue-600 px-4 py-2 text-white"
+          >
+            {mode === "create" ? "Create" : "Save Changes"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

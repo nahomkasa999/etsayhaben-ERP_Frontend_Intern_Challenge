@@ -48,7 +48,7 @@ export function Navbar() {
         href={`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`}
         className="relative"
       >
-        fiscal-year
+        Fiscal Year
       </Link>
     </nav>
   );
