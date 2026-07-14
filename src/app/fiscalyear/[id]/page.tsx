@@ -1,13 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
 import { fetchFiscalYearById } from "@/modules/fiscalyear/api/fiscalyearApi";
 import { FiscalYearForm } from "@/modules/fiscalyear/components/FiscalYearForm";
 import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 import { useSearchParams } from "next/navigation";
 import { FiscalYearActions } from "@/modules/fiscalyear/components/FiscalYearActions";
-import type { FiscalYear } from "@/modules/fiscalyear/types";
 
 export default function EditFiscalYearPage() {
   //finding query params
@@ -21,14 +19,12 @@ export default function EditFiscalYearPage() {
       fetchFiscalYearById(id!, {
         tenant_id: tenantId,
         company_id: companyId,
-        date: "",
-        calendar_type: "ETHIOPIAN",
       }),
     enabled: !!tenantId && !!companyId,
   });
 
   if (isLoading) return <p>Loading...</p>;
-  if (!fiscalYear || "details" in fiscalYear) return <p>Fiscal year not found.</p>;
+  if (!fiscalYear) return <p>Fiscal year not found.</p>;
 
   return (
     <div>

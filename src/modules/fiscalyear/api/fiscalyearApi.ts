@@ -8,6 +8,7 @@ import {
   CreateFiscalYearResponse,
   FiscalYear,
   FiscalYearByDateParams,
+  FiscalYearList,
   FiscalYearListResponse,
   ListFiscalYearsParams,
   UpdateFiscalYearParams,
@@ -78,7 +79,7 @@ export async function CreateFiscalYear(
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  writeDb([...fiscalYears, newFiscalYear]);
+  writeDb([newFiscalYear, ...fiscalYears]);
 
   return newFiscalYear;
 }
@@ -86,18 +87,14 @@ export async function CreateFiscalYear(
 //Read Single Fiscal Year
 export async function fetchFiscalYearById(
   id: string,
-  params: FiscalYearByDateParams,
+  params: ListFiscalYearsParams,
 ): Promise<FiscalYear | undefined> {
   await delay(400);
   const fiscalYears = getFiscalYearsForCompany(
     params.tenant_id,
     params.company_id,
   );
-  const index = fiscalYears.findIndex((fy) => fy.id === id);
-  if (index === -1) {
-    return;
-  }
-  return fiscalYears[index];
+  return fiscalYears.find((fy) => fy.id === id);
 }
 
 //Read Fiscal Years,
@@ -126,18 +123,22 @@ export async function fetchFiscalYearLists(
 
 export async function GetActiveFiscalYear(
   params: ListFiscalYearsParams,
-): Promise<ActiveFiscalYearResponse[]> {
+): Promise<ActiveFiscalYearResponse | Record<string, string>> {
   await delay(400);
-  const result = getFiscalYearsForCompany(
+  const fiscalYears = getFiscalYearsForCompany(
     params.tenant_id,
     params.company_id,
-  ).filter((fy) => fy.status === "OPEN");
-  return result;
+  );
+  const active = fiscalYears.find((fy) => fy.status === "OPEN");
+  if (!active) {
+    return { detail: "No active fiscal year found." };
+  }
+  return active;
 }
 
 export async function GetFiscalYearByDate(
   params: FiscalYearByDateParams,
-): Promise<ActiveFiscalYearResponse[] | Record<string, string>> {
+): Promise<FiscalYearList | Record<string, string>> {
   await delay(400);
   const fiscalYears: FiscalYear[] = getFiscalYearsForCompany(
     params.tenant_id,
@@ -145,7 +146,7 @@ export async function GetFiscalYearByDate(
   );
   const date = params.date;
   const calendar_type = params.calendar_type;
-  const result = fiscalYears.filter((fy) => {
+  const result = fiscalYears.find((fy) => {
     if (calendar_type === "ETHIOPIAN") {
       return (
         fy.status === "OPEN" &&
@@ -160,12 +161,20 @@ export async function GetFiscalYearByDate(
     );
   });
 
-  if (result.length === 0) {
+  if (!result) {
     return {
       detail: "No fiscal year found for the given date.",
     };
   }
-  return result;
+  return {
+    id: result.id,
+    fiscal_year_name: result.fiscal_year_name,
+    status: result.status,
+    start_date_eth: result.start_date_eth,
+    end_date_eth: result.end_date_eth,
+    start_date_gre: result.start_date_gre,
+    end_date_gre: result.end_date_gre,
+  };
 }
 
 //update Fiscal Year

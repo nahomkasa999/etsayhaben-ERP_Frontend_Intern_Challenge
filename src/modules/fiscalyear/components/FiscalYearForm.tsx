@@ -13,6 +13,15 @@ const DEFAULT_VALUE: CreateFiscalYearFormValue = {
   end_date: "",
 };
 
+function formatDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length === 0) return "";
+  const parts: string[] = [digits.slice(0, 2)];
+  if (digits.length > 2) parts.push(digits.slice(2, 4));
+  if (digits.length > 4) parts.push(digits.slice(4));
+  return parts.join("-");
+}
+
 function toFormValue(fy?: FiscalYear): CreateFiscalYearFormValue {
   if (!fy) return DEFAULT_VALUE;
   return {
@@ -51,7 +60,10 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
         end_date: newType === "ETHIOPIAN" ? initialValues.end_date_eth : initialValues.end_date_gre,
       }));
     } else {
-      setValues((prev) => ({ ...prev, [field]: value }));
+      const formatted = field === "start_date" || field === "end_date"
+        ? formatDateInput(value as string)
+        : value;
+      setValues((prev) => ({ ...prev, [field]: formatted }));
     }
   }
 
