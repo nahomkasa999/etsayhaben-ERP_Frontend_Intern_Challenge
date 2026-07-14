@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 Guide.md
 modulegoal.md
+/src/generated/prisma
