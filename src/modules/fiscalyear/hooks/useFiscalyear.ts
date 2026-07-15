@@ -21,9 +21,10 @@ export function useFiscalYear() {
   const { userId } = useAuthStore();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["fiscalYearLists"],
+    queryKey: ["fiscalYearLists", tenantId, companyId],
     queryFn: () =>
       fetchFiscalYearLists({ tenant_id: tenantId, company_id: companyId }),
+    enabled: Boolean(tenantId && companyId),
   });
 
   async function createFiscalYear(values: CreateFiscalYearFormValue) {

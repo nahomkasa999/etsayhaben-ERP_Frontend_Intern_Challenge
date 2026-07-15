@@ -13,13 +13,13 @@ interface AuthState {
 }
 
 export const useTenantStore = create<TenantState>((set) => ({
-  tenantId: "223e4567-e89b-12d3-a456-426614174000",
-  companyId: "223e4567-e89b-12d3-a456-426614174001",
+  tenantId: "",
+  companyId: "",
   setTenant: (tenantId, companyId) => set({ tenantId, companyId }),
 }));
 
 export const useAuthStore = create<AuthState>((set) => ({
-  userId: "223e4567-e89b-12d3-a456-426614174010",
-  userName: "Beta User 01",
+  userId: "",
+  userName: "",
   setUser: (userId, userName) => set({ userId, userName }),
 }));

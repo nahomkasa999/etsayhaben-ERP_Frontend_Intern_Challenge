@@ -17,3 +17,10 @@ export const CreateCompanySchema = z
     slug: z.string().optional().openapi({ example: "acme-trading" }),
   })
   .openapi("CreateCompany");
+
+export const UpdateCompanySchema = z
+  .object({
+    name: z.string().min(1).optional().openapi({ example: "Acme Trading PLC" }),
+    slug: z.string().optional().openapi({ example: "acme-trading" }),
+  })
+  .openapi("UpdateCompany");

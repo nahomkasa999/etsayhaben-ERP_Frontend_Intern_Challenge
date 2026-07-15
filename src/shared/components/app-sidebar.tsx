@@ -8,6 +8,7 @@ import {
   PackageIcon,
   UsersIcon,
   CalendarRangeIcon,
+  Building2Icon,
 } from "lucide-react";
 
 import { NavMain } from "@/shared/components/nav-main";
@@ -59,6 +60,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: fiscalYearUrl,
       icon: <CalendarRangeIcon />,
       isActive: pathname.startsWith("/fiscalyear"),
+    },
+    {
+      title: "Workspaces",
+      url: "/workspace",
+      icon: <Building2Icon />,
+      isActive: pathname.startsWith("/workspace"),
     },
   ];
 

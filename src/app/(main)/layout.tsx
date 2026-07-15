@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { SiteHeader } from "@/shared/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/shared/components/ui/sidebar";
+import { TenantProvider } from "@/modules/workspace/components/TenantProvider";
 
 export default function MainLayout({
   children,
@@ -8,7 +9,8 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider
+    <TenantProvider>
+      <SidebarProvider
       className="h-svh overflow-hidden"
       style={
         {
@@ -29,5 +31,6 @@ export default function MainLayout({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </TenantProvider>
   );
 }
