@@ -1,23 +1,23 @@
-import Link from 'next/link'
-import { EmployeeTable } from '@/modules/hr/components/EmployeeTable'
+"use client"
+
+import { useState } from "react"
+
+import { PageHeader } from "@/shared/components/page-header"
+import { EmployeeTable } from "@/modules/hr/components/EmployeeTable"
+import { CreateEmployeeDialog } from "@/modules/hr/components/CreateEmployeeDialog"
 
 export default function HRPage() {
+  const [createOpen, setCreateOpen] = useState(false)
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">
-          Employee Directory
-        </h1>
-
-        <Link
-          href="/hr/add"
-          className="bg-blue-600 text-white rounded px-4 py-2"
-        >
-          + Add Employee
-        </Link>
-      </div>
-
+    <div className="space-y-4">
+      <PageHeader
+        title="Employee Directory"
+        actionLabel="+ Add Employee"
+        onAction={() => setCreateOpen(true)}
+      />
       <EmployeeTable />
+      <CreateEmployeeDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

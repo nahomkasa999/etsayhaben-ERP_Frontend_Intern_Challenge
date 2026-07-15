@@ -1,35 +1,35 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { FiscalYearTable } from "@/modules/fiscalyear/components/FiscalYearTable";
-import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
+
+import { PageHeader } from "@/shared/components/page-header"
+import { FiscalYearTable } from "@/modules/fiscalyear/components/FiscalYearTable"
+import { CreateFiscalYearDialog } from "@/modules/fiscalyear/components/CreateFiscalYearDialog"
+import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore"
 
 export default function FiscalYearPage() {
-  const searchParams = useSearchParams();
-  const setTenant = useTenantStore((s) => s.setTenant);
+  const searchParams = useSearchParams()
+  const setTenant = useTenantStore((s) => s.setTenant)
+  const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
-    const tenantId = searchParams.get("tenant_id");
-    const companyId = searchParams.get("company_id");
+    const tenantId = searchParams.get("tenant_id")
+    const companyId = searchParams.get("company_id")
     if (tenantId && companyId) {
-      setTenant(tenantId, companyId);
+      setTenant(tenantId, companyId)
     }
-  }, [searchParams, setTenant]);
+  }, [searchParams, setTenant])
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Fiscal Year</h1>
-        <Link
-          href="/fiscalyear/add"
-          className="bg-blue-600 text-white rounded px-4 py-2"
-        >
-          + Add Fiscal Year
-        </Link>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Fiscal Year"
+        actionLabel="+ Add Fiscal Year"
+        onAction={() => setCreateOpen(true)}
+      />
       <FiscalYearTable />
+      <CreateFiscalYearDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
-  );
+  )
 }

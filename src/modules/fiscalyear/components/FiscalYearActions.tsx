@@ -1,6 +1,11 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+import { Button } from "@/shared/components/ui/button";
+
 import { useFiscalYear } from "../hooks/useFiscalyear";
 import { useTenantStore } from "../store/FiscalYearStore";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -13,6 +18,7 @@ type DialogConfig = {
   variant?: "confirm" | "alert";
   confirmText?: string;
   inputLabel?: string;
+  inputMultiline?: boolean;
   danger?: boolean;
   onConfirm?: (inputValue?: string) => void;
 };
@@ -33,10 +39,19 @@ export function FiscalYearActions({ fiscalYear }: Props) {
     setDialog(null);
   }
 
+  function showError(message: string) {
+    setDialog({
+      title: "Error",
+      message,
+      variant: "alert",
+      danger: true,
+    });
+  }
+
   function handleDelete() {
     setDialog({
       title: "Delete Fiscal Year",
-      message: "Are you sure you want to delete this fiscal year?",
+      message: `Are you sure you want to delete "${fiscalYear.fiscal_year_name}"? This action cannot be undone.`,
       confirmText: "Delete",
       danger: true,
       onConfirm: async () => {
@@ -44,20 +59,14 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("delete");
         try {
           await deleteFiscalYear(fiscalYear.id);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          router.push(
+            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
+          );
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            setDialog({
-              title: "Error",
-              message: error.detail,
-              variant: "alert",
-            });
+            showError(error.detail);
           } else {
-            setDialog({
-              title: "Error",
-              message: "Failed to delete fiscal year.",
-              variant: "alert",
-            });
+            showError("Failed to delete fiscal year.");
           }
         } finally {
           setLoading(null);
@@ -69,30 +78,25 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleClose() {
     setDialog({
       title: "Close Fiscal Year",
-      message: "Provide a justification for closing.",
+      message: `Provide a justification for closing "${fiscalYear.fiscal_year_name}".`,
       confirmText: "Close",
       danger: true,
       inputLabel: "Justification",
+      inputMultiline: true,
       onConfirm: async (justification) => {
-        if (!justification) return;
+        if (!justification?.trim()) return;
         closeDialog();
         setLoading("close");
         try {
           await closeFiscalYear(fiscalYear.id, justification);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          router.push(
+            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
+          );
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            setDialog({
-              title: "Error",
-              message: error.detail,
-              variant: "alert",
-            });
+            showError(error.detail);
           } else {
-            setDialog({
-              title: "Error",
-              message: "Failed to close fiscal year.",
-              variant: "alert",
-            });
+            showError("Failed to close fiscal year.");
           }
         } finally {
           setLoading(null);
@@ -104,30 +108,24 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleReopen() {
     setDialog({
       title: "Reopen Fiscal Year",
-      message: "Provide a justification for reopening.",
+      message: `Provide a justification for reopening "${fiscalYear.fiscal_year_name}".`,
       confirmText: "Reopen",
       inputLabel: "Justification",
+      inputMultiline: true,
       onConfirm: async (justification) => {
-        if (!justification) return;
+        if (!justification?.trim()) return;
         closeDialog();
         setLoading("reopen");
         try {
-          const reopened = await reopenFiscalYear(fiscalYear.id, justification);
-          console.log("reopened:", reopened);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          await reopenFiscalYear(fiscalYear.id, justification);
+          router.push(
+            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
+          );
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            setDialog({
-              title: "Error",
-              message: error.detail,
-              variant: "alert",
-            });
+            showError(error.detail);
           } else {
-            setDialog({
-              title: "Error",
-              message: "Failed to reopen fiscal year.",
-              variant: "alert",
-            });
+            showError("Failed to reopen fiscal year.");
           }
         } finally {
           setLoading(null);
@@ -146,40 +144,66 @@ export function FiscalYearActions({ fiscalYear }: Props) {
           variant={dialog.variant}
           confirmText={dialog.confirmText}
           inputLabel={dialog.inputLabel}
+          inputMultiline={dialog.inputMultiline}
           danger={dialog.danger}
+          isPending={!!loading}
           onConfirm={dialog.onConfirm}
           onCancel={closeDialog}
         />
       )}
 
-      <div className="space-x-2">
+      <div className="flex flex-wrap gap-2">
         {fiscalYear.status === "OPEN" && (
-          <button
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={handleClose}
             disabled={loading === "close"}
-            className="text-red-600 hover:underline text-sm disabled:opacity-50"
           >
-            {loading === "close" ? "Closing..." : "Close"}
-          </button>
+            {loading === "close" ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Closing...
+              </>
+            ) : (
+              "Close"
+            )}
+          </Button>
         )}
 
         {fiscalYear.status === "CLOSED" && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleReopen}
             disabled={loading === "reopen"}
-            className="text-yellow-600 hover:underline text-sm disabled:opacity-50"
           >
-            {loading === "reopen" ? "Reopening..." : "Reopen"}
-          </button>
+            {loading === "reopen" ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Reopening...
+              </>
+            ) : (
+              "Reopen"
+            )}
+          </Button>
         )}
 
-        <button
+        <Button
+          variant="destructive"
+          size="sm"
           onClick={handleDelete}
           disabled={loading === "delete"}
-          className="text-red-600 hover:underline text-sm disabled:opacity-50"
         >
-          {loading === "delete" ? "Deleting..." : "Delete"}
-        </button>
+          {loading === "delete" ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Deleting...
+            </>
+          ) : (
+            "Delete"
+          )}
+        </Button>
       </div>
     </>
   );

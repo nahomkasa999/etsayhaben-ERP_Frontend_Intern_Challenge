@@ -1,20 +1,23 @@
-// ── ROUTING ──────────────────────────────────────────────────────
-// This file = the /inventory URL. Thin on purpose — all the logic
-// lives in modules/inventory/.
+"use client"
 
-import Link from 'next/link'
-import { InventoryTable } from '@/modules/inventory/components/InventoryTable'
+import { useState } from "react"
+
+import { PageHeader } from "@/shared/components/page-header"
+import { InventoryTable } from "@/modules/inventory/components/InventoryTable"
+import { CreateItemDialog } from "@/modules/inventory/components/CreateItemDialog"
 
 export default function InventoryPage() {
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">Inventory</h1>
-                <Link href="/inventory/add" className="bg-blue-600 text-white rounded px-4 py-2">
-                    + Add Item
-                </Link>
-            </div>
-            <InventoryTable />
-        </div>
-    )
+  const [createOpen, setCreateOpen] = useState(false)
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="Inventory"
+        actionLabel="+ Add Item"
+        onAction={() => setCreateOpen(true)}
+      />
+      <InventoryTable />
+      <CreateItemDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </div>
+  )
 }

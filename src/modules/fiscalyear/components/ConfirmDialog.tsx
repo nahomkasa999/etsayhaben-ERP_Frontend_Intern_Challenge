@@ -1,6 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { Button } from "@/shared/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 
 type Props = {
   open: boolean;
@@ -12,7 +25,9 @@ type Props = {
   cancelText?: string;
   variant?: "confirm" | "alert";
   inputLabel?: string;
+  inputMultiline?: boolean;
   danger?: boolean;
+  isPending?: boolean;
 };
 
 export function ConfirmDialog({
@@ -25,59 +40,90 @@ export function ConfirmDialog({
   cancelText = "Cancel",
   variant = "confirm",
   inputLabel,
+  inputMultiline = false,
   danger = false,
+  isPending = false,
 }: Props) {
   const [inputValue, setInputValue] = useState("");
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) setInputValue("");
+  }, [open]);
+
+  const requiresInput = !!inputLabel;
+  const canConfirm = !requiresInput || inputValue.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="mb-2 text-lg font-semibold">{title}</h2>
-        <p className="mb-4 text-sm text-gray-600">{message}</p>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isPending) onCancel();
+      }}
+    >
+      <DialogContent className="sm:max-w-md" showCloseButton={!isPending}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
 
         {inputLabel && (
-          <label className="mb-4 block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">
-              {inputLabel}
-            </span>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm"
-              autoFocus
-            />
-          </label>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="confirm-dialog-input">{inputLabel}</Label>
+            {inputMultiline ? (
+              <Textarea
+                id="confirm-dialog-input"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={inputLabel}
+                disabled={isPending}
+                autoFocus
+              />
+            ) : (
+              <Input
+                id="confirm-dialog-input"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={inputLabel}
+                disabled={isPending}
+                autoFocus
+              />
+            )}
+          </div>
         )}
 
-        <div className="flex justify-end gap-3">
+        <DialogFooter className="mx-0 mb-0 grid w-full grid-cols-2 gap-4 border-0 bg-transparent p-0 sm:justify-stretch">
           {variant === "alert" ? (
-            <button
+            <Button
+              className="w-full col-span-2"
               onClick={onCancel}
-              className={`rounded px-4 py-2 text-sm text-white ${danger ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}
+              variant={danger ? "destructive" : "default"}
             >
               OK
-            </button>
+            </Button>
           ) : (
             <>
-              <button
+              <Button
+                type="button"
+                className="w-full"
+                variant="outline"
                 onClick={onCancel}
-                className="rounded border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                disabled={isPending}
               >
                 {cancelText}
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                className="w-full"
+                variant={danger ? "destructive" : "default"}
+                disabled={isPending || !canConfirm}
                 onClick={() => onConfirm?.(inputValue)}
-                className={`rounded px-4 py-2 text-sm text-white ${danger ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}
               >
-                {confirmText}
-              </button>
+                {isPending ? `${confirmText}...` : confirmText}
+              </Button>
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

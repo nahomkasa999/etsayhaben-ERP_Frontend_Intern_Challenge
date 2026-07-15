@@ -1,13 +1,14 @@
-// ── ROUTING ──────────────────────────────────────────────────────
-// /inventory/add — reuses ItemForm in "create" mode via props.
+"use client"
 
-import { ItemForm } from '@/modules/inventory/components/ItemForm'
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function AddInventoryPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Add Inventory Item</h1>
-      <ItemForm mode="create" />
-    </div>
-  )
+  const router = useRouter()
+
+  useEffect(() => {
+    router.replace("/inventory")
+  }, [router])
+
+  return null
 }

@@ -1,10 +1,21 @@
-import { FiscalYearForm } from "@/modules/fiscalyear/components/FiscalYearForm";
+"use client"
+
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function AddFiscalYearPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Add Fiscal Year</h1>
-      <FiscalYearForm mode="create" />
-    </div>
-  );
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tenantId = searchParams.get("tenant_id")
+    const companyId = searchParams.get("company_id")
+    const query =
+      tenantId && companyId
+        ? `?tenant_id=${tenantId}&company_id=${companyId}`
+        : ""
+    router.replace(`/fiscalyear${query}`)
+  }, [router, searchParams])
+
+  return null
 }

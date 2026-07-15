@@ -1,13 +1,14 @@
-import { EmployeeForm } from '@/modules/hr/components/EmployeeForm'
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function AddEmployeePage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">
-        Add Employee
-      </h1>
+  const router = useRouter()
 
-      <EmployeeForm mode="create" />
-    </div>
-  )
+  useEffect(() => {
+    router.replace("/hr")
+  }, [router])
+
+  return null
 }

@@ -1,47 +1,55 @@
-'use client'
+"use client"
 
-import { useDepartmentFilterStore } from '../store/departmentFilterStore'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 
-const DEPARTMENTS = [
-  'Store',
-  'Engineering',
-  'Finance',
-  'Marketing',
-]
+import { useDepartmentFilterStore } from "../store/departmentFilterStore"
+
+const DEPARTMENTS = ["Store", "Engineering", "Finance", "Marketing"]
+
+const ALL_VALUE = "__all__"
 
 export function DepartmentFilter() {
-  const selectedDepartment =
-    useDepartmentFilterStore(
-      (s) => s.selectedDepartment
-    )
+  const selectedDepartment = useDepartmentFilterStore(
+    (s) => s.selectedDepartment
+  )
+  const setDepartment = useDepartmentFilterStore((s) => s.setDepartment)
 
-  const setDepartment =
-    useDepartmentFilterStore(
-      (s) => s.setDepartment
-    )
+  const items = [
+    { label: "All Departments", value: ALL_VALUE },
+    ...DEPARTMENTS.map((department) => ({
+      label: department,
+      value: department,
+    })),
+  ]
 
   return (
-    <select
-      value={selectedDepartment ?? ''}
-      onChange={(e) =>
-        setDepartment(
-          e.target.value || null
-        )
+    <Select
+      value={selectedDepartment ?? ALL_VALUE}
+      onValueChange={(value) =>
+        setDepartment(!value || value === ALL_VALUE ? null : value)
       }
-      className="border rounded px-3 py-2"
+      items={items}
     >
-      <option value="">
-        All Departments
-      </option>
-
-      {DEPARTMENTS.map((department) => (
-        <option
-          key={department}
-          value={department}
-        >
-          {department}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger size="sm" className="w-44">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value={ALL_VALUE}>All Departments</SelectItem>
+          {DEPARTMENTS.map((department) => (
+            <SelectItem key={department} value={department}>
+              {department}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
