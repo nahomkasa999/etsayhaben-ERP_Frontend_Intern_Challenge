@@ -1,24 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal } from "lucide-react"
+import { Pencil } from "lucide-react"
 
 import { Badge } from "@/shared/components/ui/badge"
-import { Button, buttonVariants } from "@/shared/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/shared/components/ui/data-table-column-header"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
 
 import { useSelectionStore } from "../store/selectionStore"
 import type { Employee } from "../types"
@@ -39,76 +28,25 @@ function SelectionCheckbox({ id }: { id: string }) {
   )
 }
 
-function EmployeeRowActions({
-  employee,
-  onDelete,
-}: {
-  employee: Employee
-  onDelete: (employee: Employee) => void
-}) {
+function EmployeeRowActions({ employee }: { employee: Employee }) {
   const router = useRouter()
-  const [confirmOpen, setConfirmOpen] = useState(false)
-
-  if (confirmOpen) {
-    return (
-      <span className="space-x-2" onClick={(e) => e.stopPropagation()}>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive"
-          onClick={() => onDelete(employee)}
-        >
-          Confirm
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => setConfirmOpen(false)}>
-          Cancel
-        </Button>
-      </span>
-    )
-  }
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "icon" }),
-            "h-8 w-8 p-0"
-          )}
-        >
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(employee.id)}
-            >
-              Copy employee ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => router.push(`/hr/${employee.id}`)}
-            >
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => setConfirmOpen(true)}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={`Edit ${employee.name}`}
+        title="Edit employee"
+        onClick={() => router.push(`/hr/${employee.id}`)}
+      >
+        <Pencil />
+      </Button>
     </div>
   )
 }
 
-export function getEmployeeColumns(
-  onDelete: (employee: Employee) => void
-): ColumnDef<Employee>[] {
+export function getEmployeeColumns(): ColumnDef<Employee>[] {
   return [
     {
       id: "select",
@@ -155,9 +93,7 @@ export function getEmployeeColumns(
     {
       id: "actions",
       enableHiding: false,
-      cell: ({ row }) => (
-        <EmployeeRowActions employee={row.original} onDelete={onDelete} />
-      ),
+      cell: ({ row }) => <EmployeeRowActions employee={row.original} />,
     },
   ]
 }

@@ -9,6 +9,7 @@ export default function MainLayout({
 }) {
   return (
     <SidebarProvider
+      className="h-svh overflow-hidden"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 56)",
@@ -17,9 +18,9 @@ export default function MainLayout({
       }
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="h-svh min-h-0 overflow-hidden md:h-[calc(100svh-1rem)]">
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
               {children}

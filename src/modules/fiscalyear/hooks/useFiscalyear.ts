@@ -53,6 +53,7 @@ export function useFiscalYear() {
       },
     });
     queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+    queryClient.invalidateQueries({ queryKey: ["fiscalYear", id] });
   }
 
   async function deleteFiscalYear(id: string) {
@@ -79,6 +80,7 @@ export function useFiscalYear() {
       },
     });
     queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+    queryClient.invalidateQueries({ queryKey: ["fiscalYear"] });
   }
 
   async function closeFiscalYear(id: string, justification?: string) {
@@ -116,6 +118,7 @@ export function useFiscalYear() {
     createFiscalYear,
     updateFiscalYear,
     deleteFiscalYear,
+    activateFiscalYear,
     closeFiscalYear,
     reopenFiscalYear,
   };

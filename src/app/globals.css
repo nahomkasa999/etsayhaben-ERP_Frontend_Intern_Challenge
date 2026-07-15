@@ -179,3 +179,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .page-title {
+    @apply text-xl font-semibold tracking-tight md:text-2xl;
+  }
+}

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 
 import { useFiscalYear } from "../hooks/useFiscalyear";
 import { useTenantStore } from "../store/FiscalYearStore";
@@ -30,11 +37,19 @@ type Props = {
 
 export function FiscalYearActions({ fiscalYear }: Props) {
   const router = useRouter();
-  const { deleteFiscalYear, closeFiscalYear, reopenFiscalYear } =
-    useFiscalYear();
+  const {
+    deleteFiscalYear,
+    activateFiscalYear,
+    closeFiscalYear,
+    reopenFiscalYear,
+  } = useFiscalYear();
   const { tenantId, companyId } = useTenantStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
+
+  const canActivate =
+    !fiscalYear.is_active &&
+    (fiscalYear.status === "OPEN" || fiscalYear.status === "REOPENED");
 
   function closeDialog() {
     setDialog(null);
@@ -80,7 +95,8 @@ export function FiscalYearActions({ fiscalYear }: Props) {
     setDialog({
       title: "Close Fiscal Year",
       message: `Provide a justification for closing "${fiscalYear.fiscal_year_name}".`,
-      warning: "This fiscal year has already been reopened once. If you close it now, it cannot be reopened again.",
+      warning:
+        "This fiscal year has already been reopened once. If you close it now, it cannot be reopened again.",
       confirmText: "Close",
       danger: true,
       inputLabel: "Justification",
@@ -99,6 +115,29 @@ export function FiscalYearActions({ fiscalYear }: Props) {
             showError(error.detail);
           } else {
             showError("Failed to close fiscal year.");
+          }
+        } finally {
+          setLoading(null);
+        }
+      },
+    });
+  }
+
+  function handleActivate() {
+    setDialog({
+      title: "Activate Fiscal Year",
+      message: `Make "${fiscalYear.fiscal_year_name}" the active fiscal year? The currently active fiscal year will be deactivated.`,
+      confirmText: "Activate",
+      onConfirm: async () => {
+        closeDialog();
+        setLoading("activate");
+        try {
+          await activateFiscalYear(fiscalYear.id);
+        } catch (error) {
+          if (error instanceof FiscalYearApiError) {
+            showError(error.detail);
+          } else {
+            showError("Failed to activate fiscal year.");
           }
         } finally {
           setLoading(null);
@@ -158,60 +197,105 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         />
       )}
 
-      <div className="grid w-full grid-cols-2 gap-4">
-        {(fiscalYear.status === "OPEN" ||
-          (!!fiscalYear.reopened_at && fiscalYear.status !== "CLOSED")) && (
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={handleClose}
-            disabled={loading === "close"}
-          >
-            {loading === "close" ? (
-              <>
-                <Loader2 className="animate-spin" />
-                Closing...
-              </>
-            ) : (
-              "Close"
-            )}
-          </Button>
-        )}
+      {canActivate && (
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle>Activation</CardTitle>
+            <CardDescription>
+              Only one fiscal year can be active at a time. Activate this one to
+              use it for transactions.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="border-0 bg-transparent">
+            <Button
+              className="w-full"
+              onClick={handleActivate}
+              disabled={loading === "activate"}
+            >
+              {loading === "activate" ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Activating...
+                </>
+              ) : (
+                "Activate"
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
 
-        {fiscalYear.status === "CLOSED" && !fiscalYear.reopened_at && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleReopen}
-            disabled={loading === "reopen"}
-          >
-            {loading === "reopen" ? (
-              <>
-                <Loader2 className="animate-spin" />
-                Reopening...
-              </>
-            ) : (
-              "Reopen"
+      <Card className="max-w-xl border-destructive/20">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            Closing, reopening, or deleting a fiscal year can affect dependent
+            records. Proceed with care.
+            {fiscalYear.reopened_at && fiscalYear.status !== "REOPENED" ? (
+              <span className="mt-2 block font-medium text-warning">
+                This fiscal year has already been reopened once and cannot be
+                reopened again.
+              </span>
+            ) : null}
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="border-0 bg-transparent">
+          <div className="grid w-full grid-cols-2 gap-4">
+            {(fiscalYear.status === "OPEN" ||
+              (!!fiscalYear.reopened_at && fiscalYear.status !== "CLOSED")) && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={handleClose}
+                disabled={loading === "close"}
+              >
+                {loading === "close" ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Closing...
+                  </>
+                ) : (
+                  "Close"
+                )}
+              </Button>
             )}
-          </Button>
-        )}
 
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={handleDelete}
-          disabled={loading === "delete"}
-        >
-          {loading === "delete" ? (
-            <>
-              <Loader2 className="animate-spin" />
-              Deleting...
-            </>
-          ) : (
-            "Delete"
-          )}
-        </Button>
-      </div>
+            {fiscalYear.status === "CLOSED" && !fiscalYear.reopened_at && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleReopen}
+                disabled={loading === "reopen"}
+              >
+                {loading === "reopen" ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Reopening...
+                  </>
+                ) : (
+                  "Reopen"
+                )}
+              </Button>
+            )}
+
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleDelete}
+              disabled={loading === "delete"}
+            >
+              {loading === "delete" ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
     </>
   );
 }

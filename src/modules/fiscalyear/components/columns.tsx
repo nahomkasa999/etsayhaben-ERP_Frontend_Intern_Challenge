@@ -55,7 +55,10 @@ export function getFiscalYearColumns(
         <DataTableColumnHeader column={column} title="Fiscal Year" />
       ),
       cell: ({ row }) => (
-        <span className="font-medium">{row.getValue("fiscal_year_name")}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{row.getValue("fiscal_year_name")}</span>
+          {row.original.is_active && <Badge variant="outline">Active</Badge>}
+        </div>
       ),
     },
     {

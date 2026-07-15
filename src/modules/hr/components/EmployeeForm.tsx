@@ -1,22 +1,33 @@
-'use client'
+"use client"
 
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState, type FormEvent } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
+import { Button } from "@/shared/components/ui/button"
 import {
-  Employee,
-  EmployeeFormValues,
-} from '../types'
-
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 import {
-  createEmployee,
-  updateEmployee,
-} from '../api/employeeApi'
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 
-import {
-  validateEmployee,
-} from '../services/hrService'
+import { createEmployee, updateEmployee } from "../api/employeeApi"
+import { validateEmployee } from "../services/hrService"
+import type { Employee, EmployeeFormValues } from "../types"
 
 interface EmployeeFormProps {
   mode: 'create' | 'edit'
@@ -24,10 +35,10 @@ interface EmployeeFormProps {
 }
 
 const EMPTY_VALUES: EmployeeFormValues = {
-  name: '',
-  email: '',
-  department: 'Store',
-  status: 'active',
+  name: "",
+  email: "",
+  department: "Store",
+  status: "active",
 }
 
 export function EmployeeForm({
@@ -36,188 +47,194 @@ export function EmployeeForm({
 }: EmployeeFormProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-
-  const [values, setValues] =
-    useState<EmployeeFormValues>(
-      initialData ?? EMPTY_VALUES
-    )
-
-  const [errors, setErrors] =
-    useState<Record<string, string>>({})
-
-  const [submitting, setSubmitting] =
-    useState(false)
-
-  const [serverError, setServerError] =
-    useState('')
+  const [values, setValues] = useState<EmployeeFormValues>(
+    initialData ?? EMPTY_VALUES,
+  )
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [serverError, setServerError] = useState("")
 
   function handleChange(
     field: keyof EmployeeFormValues,
-    value: string
+    value: string,
   ) {
-    setValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setValues((prev) => ({ ...prev, [field]: value }))
+    setErrors((prev) => ({ ...prev, [field]: "" }))
   }
 
-  async function handleSubmit(
-    e: FormEvent
-  ) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
 
-    const validationErrors =
-      validateEmployee(values)
-
-    if (
-      Object.keys(validationErrors).length > 0
-    ) {
+    const validationErrors = validateEmployee(values)
+    if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       return
     }
 
-    setSubmitting(true)
-    setServerError('')
+    setErrors({})
+    setServerError("")
+    setIsSubmitting(true)
 
     try {
-      if (mode === 'create') {
+      if (mode === "create") {
         await createEmployee(values)
       } else if (initialData) {
-        await updateEmployee(
-          initialData.id,
-          values
-        )
+        await updateEmployee(initialData.id, values)
       }
 
-      queryClient.invalidateQueries({
-        queryKey: ['employees'],
-      })
-
-      router.push('/hr')
+      await queryClient.invalidateQueries({ queryKey: ["employees"] })
+      router.push("/hr")
     } catch {
-      setServerError(
-        'Failed to save employee.'
-      )
+      setServerError("Failed to save employee. Please try again.")
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-3 max-w-md"
-    >
-      <div>
-        <label className="block text-sm font-medium">
-          Name
-        </label>
+    <Card className="max-w-xl">
+      <CardHeader>
+        <CardTitle>
+          {mode === "create" ? "New Employee" : "Employee Details"}
+        </CardTitle>
+        <CardDescription>
+          {mode === "create"
+            ? "Fill in the details below to add an employee."
+            : "Update the employee details below."}
+        </CardDescription>
+      </CardHeader>
 
-        <input
-          value={values.name}
-          onChange={(e) =>
-            handleChange(
-              'name',
-              e.target.value
-            )
-          }
-          className="border rounded px-3 py-2 w-full"
-        />
+      <form onSubmit={handleSubmit}>
+        <CardContent className="grid gap-4">
+          {serverError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {serverError}
+            </p>
+          )}
 
-        {errors.name && (
-          <p className="text-red-600 text-sm">
-            {errors.name}
-          </p>
-        )}
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="employee-name">Name</Label>
+            <Input
+              id="employee-name"
+              name="name"
+              value={values.name}
+              onChange={(event) => handleChange("name", event.target.value)}
+              placeholder="John Doe"
+              autoComplete="name"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "employee-name-error" : undefined}
+            />
+            {errors.name && (
+              <p id="employee-name-error" className="text-sm text-destructive">
+                {errors.name}
+              </p>
+            )}
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium">
-          Email
-        </label>
+          <div className="grid gap-2">
+            <Label htmlFor="employee-email">Email</Label>
+            <Input
+              id="employee-email"
+              name="email"
+              type="email"
+              value={values.email}
+              onChange={(event) => handleChange("email", event.target.value)}
+              placeholder="email@company.com"
+              autoComplete="email"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "employee-email-error" : undefined}
+            />
+            {errors.email && (
+              <p id="employee-email-error" className="text-sm text-destructive">
+                {errors.email}
+              </p>
+            )}
+          </div>
 
-        <input
-          value={values.email}
-          onChange={(e) =>
-            handleChange(
-              'email',
-              e.target.value
-            )
-          }
-          className="border rounded px-3 py-2 w-full"
-        />
+          <div className="grid gap-2">
+            <Label htmlFor="employee-department">Department</Label>
+            <Select
+              value={values.department}
+              onValueChange={(value) => {
+                if (value) handleChange("department", value)
+              }}
+              disabled={isSubmitting}
+              items={[
+                { label: "Store", value: "Store" },
+                { label: "Engineering", value: "Engineering" },
+                { label: "Finance", value: "Finance" },
+                { label: "Marketing", value: "Marketing" },
+              ]}
+            >
+              <SelectTrigger id="employee-department" className="w-full">
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="Store">Store</SelectItem>
+                  <SelectItem value="Engineering">Engineering</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Marketing">Marketing</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {errors.email && (
-          <p className="text-red-600 text-sm">
-            {errors.email}
-          </p>
-        )}
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="employee-status">Status</Label>
+            <Select
+              value={values.status}
+              onValueChange={(value) => {
+                if (value) handleChange("status", value)
+              }}
+              disabled={isSubmitting}
+              items={[
+                { label: "Active", value: "active" },
+                { label: "On Leave", value: "on_leave" },
+              ]}
+            >
+              <SelectTrigger id="employee-status" className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
 
-      <div>
-        <label className="block text-sm font-medium">
-          Department
-        </label>
-
-        <select
-          value={values.department}
-          onChange={(e) =>
-            handleChange(
-              'department',
-              e.target.value
-            )
-          }
-          className="border rounded px-3 py-2 w-full"
-        >
-          <option>Store</option>
-          <option>Engineering</option>
-          <option>Finance</option>
-          <option>Marketing</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Status
-        </label>
-
-        <select
-          value={values.status}
-          onChange={(e) =>
-            handleChange(
-              'status',
-              e.target.value
-            )
-          }
-          className="border rounded px-3 py-2 w-full"
-        >
-          <option value="active">
-            Active
-          </option>
-
-          <option value="on_leave">
-            On Leave
-          </option>
-        </select>
-      </div>
-
-      {serverError && (
-        <p className="text-red-600">
-          {serverError}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="bg-blue-600 text-white rounded px-4 py-2"
-      >
-        {submitting
-          ? 'Saving...'
-          : mode === 'create'
-          ? 'Add Employee'
-          : 'Save Changes'}
-      </button>
-    </form>
+        <CardFooter className="grid w-full grid-cols-2 gap-4 border-0 bg-transparent">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push("/hr")}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <span className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {mode === "create" ? "Creating..." : "Saving..."}
+              </span>
+            ) : mode === "create" ? (
+              "Add Employee"
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }

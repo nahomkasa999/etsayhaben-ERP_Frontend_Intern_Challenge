@@ -8,6 +8,7 @@ export function EmployeeDetailPanel({
   employee,
 }: EmployeeDetailPanelProps) {
   const details = [
+    { label: "Employee ID", value: employee.id },
     { label: "Email", value: employee.email },
     { label: "Department", value: employee.department },
     { label: "Status", value: employee.status },

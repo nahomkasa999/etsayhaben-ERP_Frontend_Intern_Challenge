@@ -10,6 +10,7 @@ import { DepartmentFilter } from "./DepartmentFilter"
 import { EmployeeBulkActionBar } from "./EmployeeBulkActionBar"
 import { EmployeeDetailPanel } from "./EmployeeDetailPanel"
 import { SearchBar } from "./SearchBar"
+import { Loader2 } from "lucide-react"
 
 export function EmployeeTable() {
   const {
@@ -18,15 +19,17 @@ export function EmployeeTable() {
     isError,
     search,
     setSearch,
-    removeEmployee,
   } = useEmployees()
 
-  const columns = useMemo(
-    () => getEmployeeColumns((employee) => removeEmployee(employee.id)),
-    [removeEmployee]
-  )
+  const columns = useMemo(() => getEmployeeColumns(), [])
 
-  if (isLoading) return <p>Loading employees...</p>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
   if (isError)
     return (
       <p>

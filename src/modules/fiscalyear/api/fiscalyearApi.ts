@@ -37,7 +37,47 @@ function readDb(): FiscalYear[] {
     return SEED_DATA;
   }
 
-  return JSON.parse(raw);
+  const stored = JSON.parse(raw) as FiscalYear[];
+  const selectedByCompany = new Map<string, string>();
+
+  for (const fiscalYear of stored) {
+    if (
+      fiscalYear.is_active !== true ||
+      !["OPEN", "REOPENED"].includes(fiscalYear.status)
+    ) {
+      continue;
+    }
+
+    const companyKey = `${fiscalYear.tenant_id}:${fiscalYear.company_id}`;
+    if (!selectedByCompany.has(companyKey)) {
+      selectedByCompany.set(companyKey, fiscalYear.id);
+    }
+  }
+
+  for (const fiscalYear of stored) {
+    const companyKey = `${fiscalYear.tenant_id}:${fiscalYear.company_id}`;
+    if (
+      !selectedByCompany.has(companyKey) &&
+      fiscalYear.activated_at &&
+      ["OPEN", "REOPENED"].includes(fiscalYear.status)
+    ) {
+      selectedByCompany.set(companyKey, fiscalYear.id);
+    }
+  }
+
+  const normalized = stored.map((fiscalYear) => {
+    const companyKey = `${fiscalYear.tenant_id}:${fiscalYear.company_id}`;
+    return {
+      ...fiscalYear,
+      is_active: selectedByCompany.get(companyKey) === fiscalYear.id,
+    };
+  });
+
+  if (normalized.some((fiscalYear, index) => fiscalYear.is_active !== stored[index].is_active)) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  }
+
+  return normalized;
 }
 
 function writeDb(fiscalYears: FiscalYear[]) {
@@ -65,19 +105,31 @@ export async function CreateFiscalYear(
   }
 
   const fiscalYears = readDb();
+  const isFirstFiscalYear = !fiscalYears.some(
+    (fy) =>
+      fy.tenant_id === request.tenant_id && fy.company_id === request.company_id,
+  );
   const derivedDates = deriveFiscalYearDates(
     request.calendar_type,
     request.start_date,
     request.end_date,
   );
   const { start_date, end_date, ...requestRest } = request;
-  const newFiscalYear: CreateFiscalYearResponse = {
+  const now = new Date().toISOString();
+  const newFiscalYear: FiscalYear = {
     ...requestRest,
     ...derivedDates,
     id: crypto.randomUUID(),
     status: "OPEN",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    is_active: isFirstFiscalYear,
+    created_at: now,
+    updated_at: now,
+    ...(isFirstFiscalYear
+      ? {
+          activated_by: request.created_by,
+          activated_at: now,
+        }
+      : {}),
   };
   writeDb([newFiscalYear, ...fiscalYears]);
 
@@ -123,6 +175,7 @@ export async function fetchFiscalYearLists(
       end_date_eth: fy.end_date_eth,
       start_date_gre: fy.start_date_gre,
       end_date_gre: fy.end_date_gre,
+      is_active: fy.is_active,
     })),
   };
 }
@@ -135,7 +188,7 @@ export async function GetActiveFiscalYear(
     params.tenant_id,
     params.company_id,
   );
-  const active = fiscalYears.find((fy) => fy.status === "OPEN");
+  const active = fiscalYears.find((fy) => fy.is_active);
   if (!active) {
     throw new FiscalYearApiError("No active fiscal year found.", 404);
   }
@@ -182,6 +235,7 @@ export async function GetFiscalYearByDate(
     end_date_eth: result.end_date_eth,
     start_date_gre: result.start_date_gre,
     end_date_gre: result.end_date_gre,
+    is_active: result.is_active,
   };
 }
 
@@ -260,21 +314,39 @@ export async function ActivateFiscalYear({
 
   const existing = fiscalYears[index];
 
-  if (existing.status === "OPEN") {
-    throw new FiscalYearApiError("Fiscal year is already Active.", 409);
+  if (existing.is_active) {
+    throw new FiscalYearApiError("Fiscal year is already active.", 409);
+  }
+
+  if (existing.status === "CLOSED") {
+    throw new FiscalYearApiError(
+      "Only open or reopened fiscal years can be activated.",
+      409,
+    );
+  }
+
+  for (let i = 0; i < fiscalYears.length; i++) {
+    if (
+      fiscalYears[i].tenant_id === params.tenant_id &&
+      fiscalYears[i].company_id === params.company_id
+    ) {
+      fiscalYears[i] = { ...fiscalYears[i], is_active: false };
+    }
   }
 
   const updated: FiscalYear = {
-    ...existing,
-    status: "OPEN",
+    ...fiscalYears[index],
+    is_active: true,
     activated_by,
     activated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
   fiscalYears[index] = updated;
   writeDb(fiscalYears);
   return {
     id,
-    status: "OPEN",
+    status: updated.status,
+    is_active: true,
     activated_by,
     activated_at: updated.activated_at!,
   };
@@ -306,6 +378,7 @@ export async function CloseFiscalYear({
   const updated: FiscalYear = {
     ...existing,
     status: "CLOSED",
+    is_active: false,
     closed_by,
     closed_at: new Date().toISOString(),
     justification: params.justification,
