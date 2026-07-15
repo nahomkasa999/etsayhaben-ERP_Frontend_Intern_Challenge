@@ -35,6 +35,7 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode
   getRowId?: (originalRow: TData, index: number) => string
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode
+  subComponentStartColumn?: number
   getRowClassName?: (row: Row<TData>) => string | undefined
 }
 
@@ -46,6 +47,7 @@ export function DataTable<TData, TValue>({
   toolbar,
   getRowId,
   renderSubComponent,
+  subComponentStartColumn = 0,
   getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -129,8 +131,12 @@ export function DataTable<TData, TValue>({
                 <React.Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() && "selected"}
+                    aria-expanded={
+                      renderSubComponent ? row.getIsExpanded() : undefined
+                    }
                     className={cn(
                       renderSubComponent && "cursor-pointer",
+                      row.getIsExpanded() && "border-b-0",
                       getRowClassName?.(row)
                     )}
                     onClick={() => {
@@ -149,10 +155,24 @@ export function DataTable<TData, TValue>({
                     ))}
                   </TableRow>
                   {row.getIsExpanded() && renderSubComponent ? (
-                    <TableRow>
+                    <TableRow className="hover:bg-transparent">
+                      {Array.from({
+                        length: Math.min(
+                          subComponentStartColumn,
+                          row.getVisibleCells().length - 1
+                        ),
+                      }).map((_, index) => (
+                        <TableCell key={index} className="p-0" />
+                      ))}
                       <TableCell
-                        colSpan={row.getVisibleCells().length}
-                        className="p-0"
+                        colSpan={
+                          row.getVisibleCells().length -
+                          Math.min(
+                            subComponentStartColumn,
+                            row.getVisibleCells().length - 1
+                          )
+                        }
+                        className="px-2 pt-0 pb-4 whitespace-normal"
                       >
                         {renderSubComponent({ row })}
                       </TableCell>

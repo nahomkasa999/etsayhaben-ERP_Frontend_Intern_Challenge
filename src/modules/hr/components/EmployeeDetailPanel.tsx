@@ -1,4 +1,4 @@
-import { Employee } from '../types'
+import type { Employee } from "../types"
 
 interface EmployeeDetailPanelProps {
   employee: Employee
@@ -7,29 +7,24 @@ interface EmployeeDetailPanelProps {
 export function EmployeeDetailPanel({
   employee,
 }: EmployeeDetailPanelProps) {
+  const details = [
+    { label: "Email", value: employee.email },
+    { label: "Department", value: employee.department },
+    { label: "Status", value: employee.status },
+    {
+      label: "Last Updated",
+      value: new Date(employee.updatedAt).toLocaleString(),
+    },
+  ]
+
   return (
-    <div className="bg-gray-50 p-4 text-sm">
-      <p>
-        <strong>Email:</strong>{' '}
-        {employee.email}
-      </p>
-
-      <p>
-        <strong>Department:</strong>{' '}
-        {employee.department}
-      </p>
-
-      <p>
-        <strong>Status:</strong>{' '}
-        {employee.status}
-      </p>
-
-      <p>
-        <strong>Last Updated:</strong>{' '}
-        {new Date(
-          employee.updatedAt
-        ).toLocaleString()}
-      </p>
-    </div>
+    <dl className="grid gap-1 text-sm text-foreground">
+      {details.map(({ label, value }) => (
+        <div key={label} className="flex min-w-0 gap-1.5">
+          <dt className="shrink-0 font-medium">{label}:</dt>
+          <dd className="min-w-0 break-words text-muted-foreground">{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }

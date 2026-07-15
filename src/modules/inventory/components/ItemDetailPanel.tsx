@@ -1,19 +1,31 @@
-// ── PROPS ────────────────────────────────────────────────────────
-// Pure presentational component. Everything it needs comes from `item`.
-
-import { InventoryItem } from '../types'
+import type { InventoryItem } from "../types"
 
 interface ItemDetailPanelProps {
   item: InventoryItem
 }
 
 export function ItemDetailPanel({ item }: ItemDetailPanelProps) {
+  const details = [
+    { label: "SKU", value: item.sku },
+    {
+      label: "Reorder level",
+      value: `${item.reorderLevel} ${item.unit}`,
+    },
+    { label: "Status", value: item.status },
+    {
+      label: "Last updated",
+      value: new Date(item.updatedAt).toLocaleString(),
+    },
+  ]
+
   return (
-    <div className="bg-gray-50 p-4 text-sm">
-      <p><strong>SKU:</strong> {item.sku}</p>
-      <p><strong>Reorder level:</strong> {item.reorderLevel} {item.unit}</p>
-      <p><strong>Status:</strong> {item.status}</p>
-      <p><strong>Last updated:</strong> {new Date(item.updatedAt).toLocaleString()}</p>
-    </div>
+    <dl className="grid gap-1 text-sm text-foreground">
+      {details.map(({ label, value }) => (
+        <div key={label} className="flex min-w-0 gap-1.5">
+          <dt className="shrink-0 font-medium">{label}:</dt>
+          <dd className="min-w-0 break-words text-muted-foreground">{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }

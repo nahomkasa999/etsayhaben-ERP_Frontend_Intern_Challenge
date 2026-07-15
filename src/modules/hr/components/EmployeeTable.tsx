@@ -44,6 +44,7 @@ export function EmployeeTable() {
         renderSubComponent={({ row }) => (
           <EmployeeDetailPanel employee={row.original} />
         )}
+        subComponentStartColumn={1}
         toolbar={
           <>
             <SearchBar value={search} onChange={setSearch} />

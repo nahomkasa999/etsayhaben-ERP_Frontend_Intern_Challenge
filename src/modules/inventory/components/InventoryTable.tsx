@@ -43,6 +43,7 @@ export function InventoryTable() {
         renderSubComponent={({ row }) => (
           <ItemDetailPanel item={row.original} />
         )}
+        subComponentStartColumn={1}
         toolbar={
           <>
             <SearchBar value={search} onChange={setSearch} />
