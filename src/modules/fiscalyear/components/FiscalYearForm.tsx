@@ -232,10 +232,11 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
         </CardContent>
 
         {canSubmit && (
-          <CardFooter className="justify-end gap-2">
+          <CardFooter className="grid w-full grid-cols-2 gap-4 border-0 bg-transparent">
             <Button
               type="button"
               variant="outline"
+              className="w-full"
               onClick={() =>
                 router.push(
                   `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
@@ -245,7 +246,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <span className="flex items-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

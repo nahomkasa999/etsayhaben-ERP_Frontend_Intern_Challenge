@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { Card } from "@/shared/components/ui/card";
 
 type Props = {
   open: boolean;
@@ -28,6 +29,7 @@ type Props = {
   inputMultiline?: boolean;
   danger?: boolean;
   isPending?: boolean;
+  warning?: string;
 };
 
 export function ConfirmDialog({
@@ -43,12 +45,9 @@ export function ConfirmDialog({
   inputMultiline = false,
   danger = false,
   isPending = false,
+  warning,
 }: Props) {
   const [inputValue, setInputValue] = useState("");
-
-  useEffect(() => {
-    if (!open) setInputValue("");
-  }, [open]);
 
   const requiresInput = !!inputLabel;
   const canConfirm = !requiresInput || inputValue.trim().length > 0;
@@ -61,7 +60,7 @@ export function ConfirmDialog({
       }}
     >
       <DialogContent className="sm:max-w-md" showCloseButton={!isPending}>
-        <DialogHeader>
+        <DialogHeader className="space-y-2">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
@@ -88,10 +87,12 @@ export function ConfirmDialog({
                 autoFocus
               />
             )}
+            {warning && <Card className="rounded-lg bg-warning/10 p-2 text-sm font-medium text-destructive/50">{warning}</Card>}
           </div>
         )}
 
         <DialogFooter className="mx-0 mb-0 grid w-full grid-cols-2 gap-4 border-0 bg-transparent p-0 sm:justify-stretch">
+          
           {variant === "alert" ? (
             <Button
               className="w-full col-span-2"

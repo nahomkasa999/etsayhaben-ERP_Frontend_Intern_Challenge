@@ -10,7 +10,7 @@ import { useFiscalYear } from "../hooks/useFiscalyear";
 import { useTenantStore } from "../store/FiscalYearStore";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FiscalYearApiError } from "../types";
-import type { FiscalYearList } from "../types";
+import type { FiscalYear } from "../types";
 
 type DialogConfig = {
   title: string;
@@ -20,11 +20,12 @@ type DialogConfig = {
   inputLabel?: string;
   inputMultiline?: boolean;
   danger?: boolean;
+  warning?: string;
   onConfirm?: (inputValue?: string) => void;
 };
 
 type Props = {
-  fiscalYear: FiscalYearList;
+  fiscalYear: FiscalYear;
 };
 
 export function FiscalYearActions({ fiscalYear }: Props) {
@@ -79,6 +80,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
     setDialog({
       title: "Close Fiscal Year",
       message: `Provide a justification for closing "${fiscalYear.fiscal_year_name}".`,
+      warning: "This fiscal year has already been reopened once. If you close it now, it cannot be reopened again.",
       confirmText: "Close",
       danger: true,
       inputLabel: "Justification",
@@ -109,7 +111,10 @@ export function FiscalYearActions({ fiscalYear }: Props) {
     setDialog({
       title: "Reopen Fiscal Year",
       message: `Provide a justification for reopening "${fiscalYear.fiscal_year_name}".`,
+      warning:
+        "Reopening is allowed only once. After this fiscal year is closed again, it cannot be reopened a second time.",
       confirmText: "Reopen",
+      danger: true,
       inputLabel: "Justification",
       inputMultiline: true,
       onConfirm: async (justification) => {
@@ -149,14 +154,16 @@ export function FiscalYearActions({ fiscalYear }: Props) {
           isPending={!!loading}
           onConfirm={dialog.onConfirm}
           onCancel={closeDialog}
+          warning={dialog.warning}
         />
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {fiscalYear.status === "OPEN" && (
+      <div className="grid w-full grid-cols-2 gap-4">
+        {(fiscalYear.status === "OPEN" ||
+          (!!fiscalYear.reopened_at && fiscalYear.status !== "CLOSED")) && (
           <Button
             variant="destructive"
-            size="sm"
+            className="w-full"
             onClick={handleClose}
             disabled={loading === "close"}
           >
@@ -171,10 +178,10 @@ export function FiscalYearActions({ fiscalYear }: Props) {
           </Button>
         )}
 
-        {fiscalYear.status === "CLOSED" && (
+        {fiscalYear.status === "CLOSED" && !fiscalYear.reopened_at && (
           <Button
             variant="outline"
-            size="sm"
+            className="w-full"
             onClick={handleReopen}
             disabled={loading === "reopen"}
           >
@@ -191,7 +198,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
 
         <Button
           variant="destructive"
-          size="sm"
+          className="w-full"
           onClick={handleDelete}
           disabled={loading === "delete"}
         >

@@ -10,13 +10,12 @@ import { FiscalYearActions } from "@/modules/fiscalyear/components/FiscalYearAct
 import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore"
 import {
   Card,
-  CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
-import { Separator } from "@/shared/components/ui/separator"
 
 export default function EditFiscalYearPage() {
   const params = useParams<{ id: string }>()
@@ -76,19 +75,23 @@ export default function EditFiscalYearPage() {
 
       <FiscalYearForm mode="edit" initialValues={fiscalYear} />
 
-      <Separator />
-
       <Card className="max-w-xl border-destructive/20">
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
           <CardDescription>
             Closing, reopening, or deleting a fiscal year can affect dependent
             records. Proceed with care.
+            {fiscalYear.reopened_at && fiscalYear.status !== "REOPENED" ? (
+              <span className="mt-2 block font-medium text-warning">
+                This fiscal year has already been reopened once and cannot be
+                reopened again.
+              </span>
+            ) : null}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardFooter className="border-0 bg-transparent">
           <FiscalYearActions fiscalYear={fiscalYear} />
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   )
