@@ -1,6 +1,5 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { useParams } from "next/navigation"
 
@@ -13,18 +12,14 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card"
 
-import { fetchEmployeeById } from "../api/employeeApi"
+import { useEmployeeById } from "../hooks/useEmployees"
 import { EmployeeActions } from "./EmployeeActions"
 import { EmployeeForm } from "./EmployeeForm"
 
 export function EmployeeEdit() {
   const { id } = useParams<{ id: string }>()
 
-  const { data: employee, isLoading } = useQuery({
-    queryKey: ["employees", id],
-    queryFn: () => fetchEmployeeById(id),
-    enabled: !!id,
-  })
+  const { data: employee, isLoading } = useEmployeeById(id)
 
   if (isLoading) {
     return (

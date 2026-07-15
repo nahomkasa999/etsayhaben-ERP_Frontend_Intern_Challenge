@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 
-import { deleteEmployee } from "../api/employeeApi"
+import { deleteEmployee } from "../hooks/useEmployees"
 import type { Employee } from "../types"
 
 interface EmployeeActionsProps {

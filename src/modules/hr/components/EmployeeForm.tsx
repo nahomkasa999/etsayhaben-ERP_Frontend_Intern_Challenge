@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 
-import { createEmployee, updateEmployee } from "../api/employeeApi"
+import { createEmployee, updateEmployee } from "../hooks/useEmployees"
 import { validateEmployee } from "../services/hrService"
 import type { Employee, EmployeeFormValues } from "../types"
 

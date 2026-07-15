@@ -6,7 +6,7 @@ import { Loader2, Trash2 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 
-import { deleteItem } from "../api/inventoryApi"
+import { deleteItem } from "../hooks/useInventory"
 import { useSelectionStore } from "../store/selectionStore"
 
 export function BulkActionBar() {

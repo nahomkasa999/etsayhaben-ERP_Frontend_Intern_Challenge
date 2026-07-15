@@ -25,7 +25,7 @@ import {
 } from "@/shared/components/ui/select";
 
 import type { InventoryFormValues } from "../types";
-import { createItem } from "../api/inventoryApi";
+import { createItem } from "../hooks/useInventory";
 import { validateItem } from "../services/inventoryService";
 
 const EMPTY_VALUES: InventoryFormValues = {

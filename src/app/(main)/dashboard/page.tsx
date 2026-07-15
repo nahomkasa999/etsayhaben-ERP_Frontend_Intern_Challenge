@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { PackageIcon, UsersIcon } from "lucide-react";
 
-import { fetchItems } from "@/modules/inventory/api/inventoryApi";
+import { fetchInventoryItems } from "@/modules/inventory/hooks/useInventory";
 import { useInventoryFilterStore } from "@/modules/inventory/store/inventoryFilterStore";
 
-import { fetchEmployees } from "@/modules/hr/api/employeeApi";
+import { fetchEmployees } from "@/modules/hr/hooks/useEmployees";
 import { useDepartmentFilterStore } from "@/modules/hr/store/departmentFilterStore";
 
 import { Badge } from "@/shared/components/ui/badge";
@@ -32,7 +32,7 @@ const DEPARTMENTS = ["Store", "Engineering", "Finance", "Marketing"];
 export default function DashboardPage() {
   const { data: items = [] } = useQuery({
     queryKey: ["inventory"],
-    queryFn: fetchItems,
+    queryFn: fetchInventoryItems,
   });
 
   const selectedCategory = useInventoryFilterStore((s) => s.selectedCategory);

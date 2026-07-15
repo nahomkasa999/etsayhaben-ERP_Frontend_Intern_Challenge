@@ -1,239 +1,132 @@
-export interface FiscalYear {
-  id: string;
-  tenant_id: string;
-  company_id: string;
-  fiscal_year_name: string;
-  calendar_type: "ETHIOPIAN" | "GREGORIAN";
-  start_date_eth: string;
-  start_date_gre: string;
-  end_date_eth: string;
-  end_date_gre: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  is_active: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  activated_by?: string;
-  activated_at?: string;
-  updated_by?: string;
-  closed_by?: string;
-  closed_at?: string;
-  reopened_by?: string;
-  reopened_at?: string;
-  reopen_expires_at?: string;
-  justification?: string;
-}
+import { z } from "zod";
 
-export interface FiscalYearParams {
-  tenant_id: string;
-  company_id: string;
-}
+export const CalendarTypeSchema = z.enum(["ETHIOPIAN", "GREGORIAN"]);
+export const FiscalYearStatusSchema = z.enum(["OPEN", "CLOSED", "REOPENED"]);
 
-//create fiscal year
-export interface CreateFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  fiscal_year_name: string;
-  calendar_type: "ETHIOPIAN" | "GREGORIAN";
-  start_date: string;
-  end_date: string;
-  created_by: string;
-}
+export const FiscalYearSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string(),
+  company_id: z.string().uuid(),
+  fiscal_year_name: z.string(),
+  calendar_type: CalendarTypeSchema,
+  start_date_eth: z.string(),
+  start_date_gre: z.string(),
+  end_date_eth: z.string(),
+  end_date_gre: z.string(),
+  status: FiscalYearStatusSchema,
+  is_active: z.boolean(),
+  created_by: z.string(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+  activated_by: z.string().optional(),
+  activated_at: z.string().datetime().optional(),
+  updated_by: z.string().optional(),
+  closed_by: z.string().optional(),
+  closed_at: z.string().datetime().optional(),
+  reopened_by: z.string().optional(),
+  reopened_at: z.string().datetime().optional(),
+  reopen_expires_at: z.string().datetime().optional(),
+  justification: z.string().optional(),
+});
 
-export interface CreateFiscalYearResponse {
-  id: string;
-  tenant_id: string;
-  company_id: string;
-  fiscal_year_name: string;
-  calendar_type: "ETHIOPIAN" | "GREGORIAN";
-  start_date_eth: string;
-  start_date_gre: string;
-  end_date_eth: string;
-  end_date_gre: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  is_active: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
+export const FiscalYearListItemSchema = z.object({
+  id: z.string().uuid(),
+  fiscal_year_name: z.string(),
+  status: FiscalYearStatusSchema,
+  start_date_eth: z.string(),
+  end_date_eth: z.string(),
+  start_date_gre: z.string(),
+  end_date_gre: z.string(),
+  is_active: z.boolean(),
+});
+
+export const FiscalYearListResponseSchema = z.object({
+  count: z.number(),
+  results: z.array(FiscalYearListItemSchema),
+});
+
+export const CreateFiscalYearSchema = z.object({
+  fiscal_year_name: z.string().min(1),
+  calendar_type: CalendarTypeSchema,
+  start_date: z.string().min(1),
+  end_date: z.string().min(1),
+});
+
+export const UpdateFiscalYearSchema = z.object({
+  fiscal_year_name: z.string().min(1).optional(),
+  start_date: z.string().min(1).optional(),
+  end_date: z.string().min(1).optional(),
+});
+
+export const CloseFiscalYearSchema = z.object({
+  justification: z.string().min(1),
+});
+
+export const ReopenFiscalYearSchema = z.object({
+  justification: z.string().min(1),
+});
+
+export const FiscalYearByDateQuerySchema = z.object({
+  date: z.string().min(1),
+  calendar_type: CalendarTypeSchema,
+});
+
+export const ActivateFiscalYearResponseSchema = z.object({
+  id: z.string().uuid(),
+  status: FiscalYearStatusSchema,
+  is_active: z.literal(true),
+  activated_by: z.string(),
+  activated_at: z.string().datetime(),
+});
+
+export const CloseFiscalYearResponseSchema = z.object({
+  id: z.string().uuid(),
+  status: z.literal("CLOSED"),
+  closed_by: z.string(),
+  closed_at: z.string().datetime(),
+  justification: z.string(),
+});
+
+export const ReopenFiscalYearResponseSchema = z.object({
+  id: z.string().uuid(),
+  status: z.literal("REOPENED"),
+  reopened_by: z.string(),
+  reopened_at: z.string().datetime(),
+  reopen_expires_at: z.string().datetime(),
+  justification: z.string(),
+});
+
+export const UpdateFiscalYearResponseSchema = z.object({
+  id: z.string().uuid(),
+  fiscal_year_name: z.string(),
+  start_date_eth: z.string(),
+  end_date_eth: z.string(),
+  status: FiscalYearStatusSchema,
+  updated_by: z.string(),
+  updated_at: z.string().datetime(),
+});
+
+export const DeleteFiscalYearResponseSchema = z.object({
+  detail: z.string(),
+});
+
+export type FiscalYear = z.infer<typeof FiscalYearSchema>;
+export type FiscalYearList = z.infer<typeof FiscalYearListItemSchema>;
+export type FiscalYearListResponse = z.infer<typeof FiscalYearListResponseSchema>;
+export type CreateFiscalYearInput = z.infer<typeof CreateFiscalYearSchema>;
+export type UpdateFiscalYearInput = z.infer<typeof UpdateFiscalYearSchema>;
+export type ActivateFiscalYearResponse = z.infer<
+  typeof ActivateFiscalYearResponseSchema
+>;
+export type CloseFiscalYearResponse = z.infer<typeof CloseFiscalYearResponseSchema>;
+export type ReopenFiscalYearResponse = z.infer<typeof ReopenFiscalYearResponseSchema>;
+export type UpdateFiscalYearResponse = z.infer<typeof UpdateFiscalYearResponseSchema>;
 
 export interface CreateFiscalYearFormValue {
   fiscal_year_name: string;
   calendar_type: "ETHIOPIAN" | "GREGORIAN";
   start_date: string;
   end_date: string;
-}
-
-//Get Lists
-export interface FiscalYearList {
-  id: string;
-  fiscal_year_name: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  start_date_eth: string;
-  end_date_eth: string;
-  start_date_gre: string;
-  end_date_gre: string;
-  is_active: boolean;
-}
-
-export interface FiscalYearListResponse {
-  count: number;
-  results: FiscalYearList[];
-}
-//Get Fiscal Year By Date
-export interface ListFiscalYearsParams {
-  tenant_id: string;
-  company_id: string;
-}
-
-//Get Fiscal Year By Date
-export interface ActiveFiscalYearResponse {
-  id: string;
-  fiscal_year_name: string;
-  calendar_type: "ETHIOPIAN" | "GREGORIAN";
-  start_date_eth: string;
-  start_date_gre: string;
-  end_date_eth: string;
-  end_date_gre: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  is_active: boolean;
-}
-
-//Get Fiscal Year By Date
-export interface FiscalYearByDateParams {
-  tenant_id: string;
-  company_id: string;
-  date: string;
-  calendar_type: "ETHIOPIAN" | "GREGORIAN";
-}
-
-//Update Fiscal Year
-export interface UpdateFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  updated_by: string;
-  start_date?: string;
-  end_date?: string;
-  fiscal_year_name?: string;
-}
-
-export interface UpdateFiscalYearResponse {
-  id: string;
-  fiscal_year_name: string;
-  start_date_eth: string;
-  end_date_eth: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  updated_by: string;
-  updated_at: string;
-}
-
-export interface UpdateFiscalYearFormValue {
-  start_date?: string;
-  end_date?: string;
-  fiscal_year_name?: string;
-}
-
-export interface UpdateFiscalYearParams {
-  id: string;
-  updated_by: string;
-  params: UpdateFiscalYearRequestBase;
-}
-
-//Activate Fiscal Year
-export interface ActivateFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  activated_by: string;
-}
-
-export interface ActivateFiscalYearResponse {
-  id: string;
-  status: "OPEN" | "CLOSED" | "REOPENED";
-  is_active: true;
-  activated_by: string;
-  activated_at: string;
-}
-
-export interface ActivateFiscalYearFormValue {
-  activated_by: string;
-}
-
-export interface ActivateFiscalYearParams {
-  id: string;
-  activated_by: string;
-  params: ActivateFiscalYearRequestBase;
-}
-
-//Close Fiscal Year
-export interface CloseFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  closed_by: string;
-  justification: string;
-}
-
-export interface CloseFiscalYearResponse {
-  id: string;
-  status: "CLOSED";
-  closed_by: string;
-  closed_at: string;
-  justification: string;
-}
-
-export interface CloseFiscalYearFormValue {
-  closed_by: string;
-  justification: string;
-}
-
-export interface CloseFiscalYearParams {
-  id: string;
-  closed_by: string;
-  params: CloseFiscalYearRequestBase;
-}
-
-//Reopen Fiscal Year
-export interface ReopenFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  reopened_by: string;
-  justification: string;
-}
-
-export interface ReopenFiscalYearResponse {
-  id: string;
-  status: "REOPENED";
-  reopened_by: string;
-  reopened_at: string;
-  reopen_expires_at: string;
-  justification: string;
-}
-
-export interface ReopenFiscalYearFormValue {
-  reopened_by: string;
-  justification: string;
-}
-
-export interface ReopenFiscalYearParams {
-  id: string;
-  reopened_by: string;
-  params: ReopenFiscalYearRequestBase;
-}
-
-//Delete Fiscal Year
-export interface DeleteFiscalYearRequestBase {
-  tenant_id: string;
-  company_id: string;
-  deleted_by: string;
-}
-
-export interface DeleteFiscalYearFormValue {
-  deleted_by: string;
-}
-
-export interface DeleteFiscalYearParams {
-  id: string;
-  deleted_by: string;
-  params: DeleteFiscalYearRequestBase;
 }
 
 export class FiscalYearApiError extends Error {

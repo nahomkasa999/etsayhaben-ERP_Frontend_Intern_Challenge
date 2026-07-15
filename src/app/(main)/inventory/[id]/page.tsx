@@ -1,22 +1,14 @@
 'use client'
 
-// ── ROUTING + API INTEGRATION ────────────────────────────────────
-// [id] in the folder name = dynamic route. Fetches one item by id,
-// then passes it to ItemForm as initialData (props).
-
-import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { fetchItemById } from '@/modules/inventory/api/inventoryApi'
+import { useInventoryItemById } from '@/modules/inventory/hooks/useInventory'
 import { ItemForm } from '@/modules/inventory/components/ItemForm'
 
 export default function EditInventoryPage() {
     const params = useParams<{ id: string }>()
 
-    const { data: item, isLoading } = useQuery({
-        queryKey: ['inventory', params.id],
-        queryFn: () => fetchItemById(params.id),
-    })
+    const { data: item, isLoading } = useInventoryItemById(params.id)
 
     if (isLoading) {
         return (

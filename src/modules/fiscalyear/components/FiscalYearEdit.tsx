@@ -1,29 +1,18 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
-import { fetchFiscalYearById } from "../api/fiscalyearApi"
+import { useFiscalYearById } from "../hooks/useFiscalyear"
 import { FiscalYearForm } from "../components/FiscalYearForm"
 import { FiscalYearActions } from "../components/FiscalYearActions"
-import { useTenantStore } from "../store/FiscalYearStore"
 import { Badge } from "@/shared/components/ui/badge"
 
 export function FiscalYearEdit() {
   const params = useParams<{ id: string }>()
   const id = params.id
-  const { tenantId, companyId } = useTenantStore()
 
-  const { data: fiscalYear, isLoading } = useQuery({
-    queryKey: ["fiscalYear", id],
-    queryFn: () =>
-      fetchFiscalYearById(id, {
-        tenant_id: tenantId,
-        company_id: companyId,
-      }),
-    enabled: !!id && !!tenantId && !!companyId,
-  })
+  const { data: fiscalYear, isLoading } = useFiscalYearById(id)
 
   if (isLoading) {
     return (

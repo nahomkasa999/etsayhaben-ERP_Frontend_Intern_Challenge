@@ -9,7 +9,7 @@ import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { InventoryFormValues, InventoryItem } from '../types'
-import { createItem, updateItem } from '../api/inventoryApi'
+import { createItem, updateItem } from '../hooks/useInventory'
 import { validateItem } from '../services/inventoryService'
 
 interface ItemFormProps {

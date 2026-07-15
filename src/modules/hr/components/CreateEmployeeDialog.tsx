@@ -25,7 +25,7 @@ import {
 } from "@/shared/components/ui/select";
 
 import type { EmployeeFormValues } from "../types";
-import { createEmployee } from "../api/employeeApi";
+import { createEmployee } from "../hooks/useEmployees";
 import { validateEmployee } from "../services/hrService";
 
 const EMPTY_VALUES: EmployeeFormValues = {

@@ -23,6 +23,37 @@ enum FiscalYearStatus {
   REOPENED
 }
 
+enum InventoryCategory {
+  Stationery
+  Electronics
+  Furniture
+  Other
+}
+
+enum InventoryUnit {
+  pcs
+  box
+  kg
+  liter
+}
+
+enum InventoryItemStatus {
+  active
+  inactive
+}
+
+enum EmployeeDepartment {
+  Store
+  Engineering
+  Finance
+  Marketing
+}
+
+enum EmployeeStatus {
+  active
+  on_leave
+}
+
 model FiscalYear {
   id                String           @id @default(uuid()) @db.Uuid
   tenant_id         String
@@ -57,17 +88,53 @@ model FiscalYear {
 }
 
 model Company {
-  id             String       @id @default(uuid()) @db.Uuid
+  id             String          @id @default(uuid()) @db.Uuid
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   slug           String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
+  employees      Employee[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@map("companies")
+}
+
+model InventoryItem {
+  id           String              @id @default(uuid()) @db.Uuid
+  companyId    String              @db.Uuid
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  sku          String
+  category     InventoryCategory
+  quantity     Int
+  unit         InventoryUnit
+  price        Decimal             @db.Decimal(10, 2)
+  reorderLevel Int
+  status       InventoryItemStatus @default(active)
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([companyId, sku])
+  @@index([companyId])
+  @@map("inventory_items")
+}
+
+model Employee {
+  id         String             @id @default(uuid()) @db.Uuid
+  companyId  String             @db.Uuid
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  email      String
+  department EmployeeDepartment
+  status     EmployeeStatus     @default(active)
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@map("employees")
 }
 
 model User {

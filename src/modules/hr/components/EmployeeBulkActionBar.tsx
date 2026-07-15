@@ -6,7 +6,7 @@ import { Loader2, Trash2 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 
-import { deleteEmployee } from "../api/employeeApi"
+import { deleteEmployee } from "../hooks/useEmployees"
 import { useSelectionStore } from "../store/selectionStore"
 
 export function EmployeeBulkActionBar() {
