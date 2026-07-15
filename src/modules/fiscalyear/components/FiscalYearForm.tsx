@@ -24,16 +24,16 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 
-import type { CreateFiscalYearFormValue, FiscalYear } from "../types";
+import type { FiscalYearFormValues, FiscalYear } from "../types";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
 import { useFiscalYear } from "../hooks/useFiscalyear";
-import { useTenantStore } from "../store/FiscalYearStore";
+import { useTenantStore } from "../store/fiscalYearStore";
 
-const DEFAULT_VALUE: CreateFiscalYearFormValue = {
-  fiscal_year_name: "",
-  calendar_type: "ETHIOPIAN",
-  start_date: "",
-  end_date: "",
+const DEFAULT_VALUE: FiscalYearFormValues = {
+  fiscalYearName: "",
+  calendarType: "ETHIOPIAN",
+  startDate: "",
+  endDate: "",
 };
 
 function formatDateInput(raw: string): string {
@@ -45,13 +45,13 @@ function formatDateInput(raw: string): string {
   return parts.join("-");
 }
 
-function toFormValue(fy?: FiscalYear): CreateFiscalYearFormValue {
+function toFormValue(fy?: FiscalYear): FiscalYearFormValues {
   if (!fy) return DEFAULT_VALUE;
   return {
-    fiscal_year_name: fy.fiscal_year_name,
-    calendar_type: fy.calendar_type,
-    start_date: fy.start_date_eth,
-    end_date: fy.end_date_eth,
+    fiscalYearName: fy.fiscalYearName,
+    calendarType: fy.calendarType,
+    startDate: fy.startDateEth,
+    endDate: fy.endDateEth,
   };
 }
 
@@ -64,7 +64,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
   const router = useRouter();
   const { createFiscalYear, updateFiscalYear } = useFiscalYear();
   const { tenantId, companyId } = useTenantStore();
-  const [values, setValues] = useState<CreateFiscalYearFormValue>(
+  const [values, setValues] = useState<FiscalYearFormValues>(
     toFormValue(initialValues),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,26 +74,26 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
   const canSubmit = !(mode === "edit" && initialValues?.status === "CLOSED");
 
   function handleChange(
-    field: keyof CreateFiscalYearFormValue,
+    field: keyof FiscalYearFormValues,
     value: string,
   ) {
-    if (field === "calendar_type" && initialValues) {
+    if (field === "calendarType" && initialValues) {
       const newType = value as "ETHIOPIAN" | "GREGORIAN";
       setValues((prev) => ({
         ...prev,
-        calendar_type: newType,
-        start_date:
+        calendarType: newType,
+        startDate:
           newType === "ETHIOPIAN"
-            ? initialValues.start_date_eth
-            : initialValues.start_date_gre,
-        end_date:
+            ? initialValues.startDateEth
+            : initialValues.startDateGre,
+        endDate:
           newType === "ETHIOPIAN"
-            ? initialValues.end_date_eth
-            : initialValues.end_date_gre,
+            ? initialValues.endDateEth
+            : initialValues.endDateGre,
       }));
     } else {
       const formatted =
-        field === "start_date" || field === "end_date"
+        field === "startDate" || field === "endDate"
           ? formatDateInput(value)
           : value;
       setValues((prev) => ({ ...prev, [field]: formatted }));
@@ -119,7 +119,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
       } else if (initialValues) {
         await updateFiscalYear(initialValues.id, values);
       }
-      router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+      router.push(`/fiscalyear`);
     } catch (error) {
       setServerErrors(
         error instanceof Error ? error.message : "Something went wrong",
@@ -152,38 +152,38 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="fiscal_year_name">Fiscal Year Name</Label>
+            <Label htmlFor="fiscalYearName">Fiscal Year Name</Label>
             <Input
-              id="fiscal_year_name"
-              name="fiscal_year_name"
-              value={values.fiscal_year_name}
+              id="fiscalYearName"
+              name="fiscalYearName"
+              value={values.fiscalYearName}
               onChange={(e) =>
-                handleChange("fiscal_year_name", e.target.value)
+                handleChange("fiscalYearName", e.target.value)
               }
               placeholder="FY2013"
               disabled={isReadOnly}
-              aria-invalid={!!errors.fiscal_year_name}
+              aria-invalid={!!errors.fiscalYearName}
             />
-            {errors.fiscal_year_name && (
+            {errors.fiscalYearName && (
               <p className="text-sm text-destructive">
-                {errors.fiscal_year_name}
+                {errors.fiscalYearName}
               </p>
             )}
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="calendar_type">Calendar Type</Label>
+            <Label htmlFor="calendarType">Calendar Type</Label>
             <Select
-              value={values.calendar_type}
+              value={values.calendarType}
               onValueChange={(value) => {
-                if (value) handleChange("calendar_type", value);
+                if (value) handleChange("calendarType", value);
               }}
               items={[
                 { label: "Ethiopian", value: "ETHIOPIAN" },
                 { label: "Gregorian", value: "GREGORIAN" },
               ]}
             >
-              <SelectTrigger id="calendar_type" className="w-full">
+              <SelectTrigger id="calendarType" className="w-full">
                 <SelectValue placeholder="Select calendar" />
               </SelectTrigger>
               <SelectContent>
@@ -193,40 +193,40 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
                 </SelectGroup>
               </SelectContent>
             </Select>
-            {errors.calendar_type && (
-              <p className="text-sm text-destructive">{errors.calendar_type}</p>
+            {errors.calendarType && (
+              <p className="text-sm text-destructive">{errors.calendarType}</p>
             )}
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="start_date">Start Date</Label>
+            <Label htmlFor="startDate">Start Date</Label>
             <Input
-              id="start_date"
-              name="start_date"
-              value={values.start_date}
-              onChange={(e) => handleChange("start_date", e.target.value)}
+              id="startDate"
+              name="startDate"
+              value={values.startDate}
+              onChange={(e) => handleChange("startDate", e.target.value)}
               placeholder="01-11-2012"
               disabled={isReadOnly}
-              aria-invalid={!!errors.start_date}
+              aria-invalid={!!errors.startDate}
             />
-            {errors.start_date && (
-              <p className="text-sm text-destructive">{errors.start_date}</p>
+            {errors.startDate && (
+              <p className="text-sm text-destructive">{errors.startDate}</p>
             )}
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="end_date">End Date</Label>
+            <Label htmlFor="endDate">End Date</Label>
             <Input
-              id="end_date"
-              name="end_date"
-              value={values.end_date}
-              onChange={(e) => handleChange("end_date", e.target.value)}
+              id="endDate"
+              name="endDate"
+              value={values.endDate}
+              onChange={(e) => handleChange("endDate", e.target.value)}
               placeholder="30-10-2013"
               disabled={isReadOnly}
-              aria-invalid={!!errors.end_date}
+              aria-invalid={!!errors.endDate}
             />
-            {errors.end_date && (
-              <p className="text-sm text-destructive">{errors.end_date}</p>
+            {errors.endDate && (
+              <p className="text-sm text-destructive">{errors.endDate}</p>
             )}
           </div>
         </CardContent>
@@ -238,9 +238,7 @@ export function FiscalYearForm({ initialValues, mode }: Props) {
               variant="outline"
               className="w-full"
               onClick={() =>
-                router.push(
-                  `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
-                )
+                router.push(`/fiscalyear`)
               }
               disabled={isSubmitting}
             >

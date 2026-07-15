@@ -2,7 +2,7 @@
 
 import { createFetch, createSchema } from "@better-fetch/fetch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   CreateWorkspaceSchema,
   OrganizationsListResponseSchema,
@@ -12,6 +12,7 @@ import {
   type CreateWorkspaceInput,
   type Workspace,
 } from "../types";
+import { WorkspaceApiError } from "../types";
 
 const workspaceFetch = createFetch({
   baseURL: "/api/v1",
@@ -34,29 +35,36 @@ const workspaceFetch = createFetch({
   ),
 });
 
-export function useWorkspace() {
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
+function createApiError(fetchError: unknown, fallback: string) {
+  let message = fallback;
+  let status = 400;
 
-  function getErrorMessage(fetchError: unknown, fallback: string) {
+  if (fetchError && typeof fetchError === "object") {
     if (
-      fetchError &&
-      typeof fetchError === "object" &&
       "message" in fetchError &&
       typeof fetchError.message === "string" &&
       fetchError.message.length > 0
     ) {
-      return fetchError.message;
+      message = fetchError.message;
     }
 
-    return fallback;
+    if ("status" in fetchError && typeof fetchError.status === "number") {
+      status = fetchError.status;
+    }
   }
+
+  return new WorkspaceApiError(message, status);
+}
+
+export function useWorkspace() {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchOrganizations() {
     const { data, error: fetchError } = await workspaceFetch("/organizations");
 
     if (fetchError) {
-      throw new Error(getErrorMessage(fetchError, "Failed to fetch organizations"));
+      throw createApiError(fetchError, "Failed to fetch organizations");
     }
 
     return data;
@@ -68,7 +76,7 @@ export function useWorkspace() {
     });
 
     if (fetchError) {
-      throw new Error(getErrorMessage(fetchError, "Failed to create organization"));
+      throw createApiError(fetchError, "Failed to create organization");
     }
 
     return data;
@@ -81,9 +89,7 @@ export function useWorkspace() {
     );
 
     if (fetchError) {
-      throw new Error(
-        getErrorMessage(fetchError, "Failed to set active organization"),
-      );
+      throw createApiError(fetchError, "Failed to set active organization");
     }
 
     return data;
@@ -94,19 +100,11 @@ export function useWorkspace() {
     queryFn: fetchOrganizations,
   });
 
-  const workspaces = useMemo(
-    () => organizationsQuery.data?.organizations ?? [],
-    [organizationsQuery.data?.organizations],
-  );
+  const workspaces = organizationsQuery.data?.organizations ?? [];
   const activeOrganizationId =
     organizationsQuery.data?.activeOrganizationId ?? null;
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === activeOrganizationId) ?? null;
-
-  const totalCompanies = useMemo(
-    () => workspaces.reduce((sum, workspace) => sum + workspace.companyCount, 0),
-    [workspaces],
-  );
 
   const createMutation = useMutation({
     mutationFn: createOrganizationRequest,
@@ -135,7 +133,7 @@ export function useWorkspace() {
       return await createMutation.mutateAsync(input);
     } catch (actionError) {
       setError(
-        actionError instanceof Error
+        actionError instanceof WorkspaceApiError
           ? actionError.message
           : "Failed to create workspace",
       );
@@ -150,7 +148,7 @@ export function useWorkspace() {
       await setActiveMutation.mutateAsync(organizationId);
     } catch (actionError) {
       setError(
-        actionError instanceof Error
+        actionError instanceof WorkspaceApiError
           ? actionError.message
           : "Failed to set active workspace",
       );
@@ -162,8 +160,6 @@ export function useWorkspace() {
     workspaces,
     activeWorkspace,
     activeOrganizationId,
-    totalOrganizations: workspaces.length,
-    totalCompanies,
     isLoading: organizationsQuery.isLoading,
     isMutating: createMutation.isPending || setActiveMutation.isPending,
     error,

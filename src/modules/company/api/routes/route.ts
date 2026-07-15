@@ -1,8 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
-import prisma from "@/lib/db";
-import { isOrganizationOwner, type AppVariables } from "@/app/api/types/context";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import type { AppVariables } from "@/app/api/types/context";
+import { isOrganizationOwner } from "@/app/api/types/context";
+import { auth } from "@/lib/auth";
 import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
 import {
   CompaniesListResponseSchema,
@@ -13,32 +15,76 @@ import {
   SelectCompanySchema,
   UpdateCompanySchema,
 } from "@/modules/company/types";
+import {
+  checkSlugExists,
+  CompanyRepositoryError,
+  createCompany,
+  deleteCompany as deleteCompanyRepo,
+  ensureUniqueCompanySlug,
+  getCompanyById,
+  listCompanies,
+  updateCompany as updateCompanyRepo,
+} from "@/modules/company/services/companyRepository";
 import { slugify } from "@/shared/lib/slug";
 
 const ErrorSchema = z
   .object({
     error: z.string(),
   })
-  .openapi("ErrorResponse");
+  .openapi("CompanyErrorResponse");
+
+const authErrorResponses = {
+  400: {
+    description: "No active organization",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+  401: {
+    description: "Unauthorized",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+  403: {
+    description: "Forbidden",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+  404: {
+    description: "Not found",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+} as const;
 
 type CompanyEnv = { Variables: AppVariables };
 
-function toCompanyResponse(company: {
-  id: string;
-  organizationId: string;
-  name: string;
-  slug: string;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: company.id,
-    organizationId: company.organizationId,
-    name: company.name,
-    slug: company.slug,
-    createdAt: company.createdAt.toISOString(),
-    updatedAt: company.updatedAt.toISOString(),
-  };
+async function resolveOrgContext(c: Context<CompanyEnv>) {
+  const session = c.get("session");
+  const user = c.get("user");
+
+  if (!session || !user) {
+    return { ok: false as const, response: c.json({ error: "Unauthorized" }, 401) };
+  }
+
+  const organizationId = session.activeOrganizationId;
+
+  if (!organizationId) {
+    return { ok: false as const, response: c.json({ error: "No active organization selected" }, 400) };
+  }
+
+  const member = await auth.api.getSession({ headers: c.req.raw.headers }).then(
+    (s) => s?.session.activeOrganizationId === organizationId,
+  );
+
+  if (!member) {
+    return { ok: false as const, response: c.json({ error: "Forbidden" }, 403) };
+  }
+
+  return { ok: true as const, organizationId, userId: user.id };
+}
+
+function repositoryErrorResponse(
+  c: Context<CompanyEnv>,
+  error: CompanyRepositoryError,
+  status: ContentfulStatusCode,
+) {
+  return c.json({ error: error.message }, status);
 }
 
 function setActiveCompanyCookie(c: Context, companyId: string) {
@@ -60,25 +106,6 @@ function clearActiveCompanyCookie(c: Context) {
   });
 }
 
-async function ensureUniqueCompanySlug(organizationId: string, baseSlug: string) {
-  let slug = baseSlug || "company";
-  let suffix = 0;
-
-  while (true) {
-    const candidate = suffix === 0 ? slug : `${slug}-${suffix}`;
-    const existing = await prisma.company.findFirst({
-      where: { organizationId, slug: candidate },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return candidate;
-    }
-
-    suffix += 1;
-  }
-}
-
 export const listCompaniesRoute = createRoute({
   method: "get",
   path: "/companies",
@@ -93,18 +120,7 @@ export const listCompaniesRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "No active organization",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -122,21 +138,7 @@ export const listCompaniesHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
-
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
-  const companies = await prisma.company.findMany({
-    where: { organizationId },
-    orderBy: { createdAt: "asc" },
-  });
+  const companies = await listCompanies(organizationId);
 
   const cookieCompanyId = getCookie(c, ACTIVE_COMPANY_COOKIE);
   let activeCompanyId: string | null = null;
@@ -148,7 +150,7 @@ export const listCompaniesHandler = async (c: Context<CompanyEnv>) => {
 
   return c.json(
     {
-      companies: companies.map(toCompanyResponse),
+      companies,
       activeCompanyId,
     },
     200,
@@ -178,18 +180,11 @@ export const createCompanyRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Validation error",
+    409: {
+      description: "Conflict",
       content: { "application/json": { schema: ErrorSchema } },
     },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -207,21 +202,6 @@ export const createCompanyHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
-
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
-  if (!isOrganizationOwner(member)) {
-    return c.json({ error: "Only organization owners can create companies" }, 403);
-  }
-
   const body = CreateCompanySchema.parse(await c.req.json());
   const name = body.name.trim();
 
@@ -237,27 +217,26 @@ export const createCompanyHandler = async (c: Context<CompanyEnv>) => {
 
   const slug = await ensureUniqueCompanySlug(organizationId, baseSlug);
 
-  const company = await prisma.company.create({
-    data: {
-      organizationId,
-      name,
-      slug,
-    },
-  });
-
-  setActiveCompanyCookie(c, company.id);
-
-  return c.json(toCompanyResponse(company), 201);
+  try {
+    const company = await createCompany(organizationId, name, slug);
+    setActiveCompanyCookie(c, company.id);
+    return c.json(company, 201);
+  } catch (error) {
+    if (error instanceof CompanyRepositoryError) {
+      return repositoryErrorResponse(c, error, 409);
+    }
+    throw error;
+  }
 };
 
 export const getCompanyRoute = createRoute({
   method: "get",
-  path: "/companies/{companyId}",
+  path: "/companies/{id}",
   tags: ["Companies"],
   summary: "Get a company in the active organization",
   request: {
     params: z.object({
-      companyId: z.string().uuid(),
+      id: z.string().uuid(),
     }),
   },
   responses: {
@@ -269,22 +248,7 @@ export const getCompanyRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    400: {
-      description: "No active organization",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    404: {
-      description: "Company not found",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -302,42 +266,27 @@ export const getCompanyHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
+  const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
 
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
+  try {
+    const company = await getCompanyById(id, organizationId);
+    return c.json(company, 200);
+  } catch (error) {
+    if (error instanceof CompanyRepositoryError) {
+      return repositoryErrorResponse(c, error, 404);
+    }
+    throw error;
   }
-
-  const { companyId } = z
-    .object({
-      companyId: z.string().uuid(),
-    })
-    .parse(c.req.param());
-
-  const company = await prisma.company.findFirst({
-    where: { id: companyId, organizationId },
-  });
-
-  if (!company) {
-    return c.json({ error: "Company not found" }, 404);
-  }
-
-  return c.json(toCompanyResponse(company), 200);
 };
 
 export const updateCompanyRoute = createRoute({
   method: "patch",
-  path: "/companies/{companyId}",
+  path: "/companies/{id}",
   tags: ["Companies"],
   summary: "Update a company in the active organization",
   request: {
     params: z.object({
-      companyId: z.string().uuid(),
+      id: z.string().uuid(),
     }),
     body: {
       content: {
@@ -356,22 +305,11 @@ export const updateCompanyRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Unauthorized",
+    409: {
+      description: "Conflict",
       content: { "application/json": { schema: ErrorSchema } },
     },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    404: {
-      description: "Company not found",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    400: {
-      description: "Validation error",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -389,36 +327,8 @@ export const updateCompanyHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
-
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
-  if (!isOrganizationOwner(member)) {
-    return c.json({ error: "Only organization owners can update companies" }, 403);
-  }
-
-  const { companyId } = z
-    .object({
-      companyId: z.string().uuid(),
-    })
-    .parse(c.req.param());
-
+  const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
   const body = UpdateCompanySchema.parse(await c.req.json());
-
-  const company = await prisma.company.findFirst({
-    where: { id: companyId, organizationId },
-  });
-
-  if (!company) {
-    return c.json({ error: "Company not found" }, 404);
-  }
 
   const data: { name?: string; slug?: string } = {};
 
@@ -436,38 +346,33 @@ export const updateCompanyHandler = async (c: Context<CompanyEnv>) => {
       return c.json({ error: "Company slug is required" }, 400);
     }
 
-    const existing = await prisma.company.findFirst({
-      where: {
-        organizationId,
-        slug,
-        NOT: { id: companyId },
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      return c.json({ error: "Company slug is already taken" }, 400);
+    const exists = await checkSlugExists(organizationId, slug, id);
+    if (exists) {
+      return c.json({ error: "Company slug is already taken" }, 409);
     }
 
     data.slug = slug;
   }
 
-  const updated = await prisma.company.update({
-    where: { id: companyId },
-    data,
-  });
-
-  return c.json(toCompanyResponse(updated), 200);
+  try {
+    const company = await updateCompanyRepo(id, organizationId, data);
+    return c.json(company, 200);
+  } catch (error) {
+    if (error instanceof CompanyRepositoryError) {
+      return repositoryErrorResponse(c, error, error.status === 409 ? 409 : 404);
+    }
+    throw error;
+  }
 };
 
 export const deleteCompanyRoute = createRoute({
   method: "delete",
-  path: "/companies/{companyId}",
+  path: "/companies/{id}",
   tags: ["Companies"],
   summary: "Delete a company in the active organization",
   request: {
     params: z.object({
-      companyId: z.string().uuid(),
+      id: z.string().uuid(),
     }),
   },
   responses: {
@@ -479,22 +384,7 @@ export const deleteCompanyRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    400: {
-      description: "No active organization",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    404: {
-      description: "Company not found",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -512,44 +402,22 @@ export const deleteCompanyHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
+  const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
 
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
+  try {
+    await deleteCompanyRepo(id, organizationId);
+
+    if (getCookie(c, ACTIVE_COMPANY_COOKIE) === id) {
+      clearActiveCompanyCookie(c);
+    }
+
+    return c.json({ success: true as const }, 200);
+  } catch (error) {
+    if (error instanceof CompanyRepositoryError) {
+      return repositoryErrorResponse(c, error, 404);
+    }
+    throw error;
   }
-
-  if (!isOrganizationOwner(member)) {
-    return c.json({ error: "Only organization owners can delete companies" }, 403);
-  }
-
-  const { companyId } = z
-    .object({
-      companyId: z.string().uuid(),
-    })
-    .parse(c.req.param());
-
-  const company = await prisma.company.findFirst({
-    where: { id: companyId, organizationId },
-  });
-
-  if (!company) {
-    return c.json({ error: "Company not found" }, 404);
-  }
-
-  await prisma.company.delete({
-    where: { id: companyId },
-  });
-
-  if (getCookie(c, ACTIVE_COMPANY_COOKIE) === companyId) {
-    clearActiveCompanyCookie(c);
-  }
-
-  return c.json({ success: true as const }, 200);
 };
 
 export const selectCompanyRoute = createRoute({
@@ -575,22 +443,7 @@ export const selectCompanyRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Validation error",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    404: {
-      description: "Company not found",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -608,34 +461,23 @@ export const selectCompanyHandler = async (c: Context<CompanyEnv>) => {
     return c.json({ error: "No active organization selected" }, 400);
   }
 
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId,
-    },
-  });
-
-  if (!member) {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
   const { companyId } = SelectCompanySchema.parse(await c.req.json());
 
-  const company = await prisma.company.findFirst({
-    where: { id: companyId, organizationId },
-  });
+  try {
+    const company = await getCompanyById(companyId, organizationId);
+    setActiveCompanyCookie(c, company.id);
 
-  if (!company) {
-    return c.json({ error: "Company not found" }, 404);
+    return c.json(
+      {
+        company,
+        activeCompanyId: company.id,
+      },
+      200,
+    );
+  } catch (error) {
+    if (error instanceof CompanyRepositoryError) {
+      return repositoryErrorResponse(c, error, 404);
+    }
+    throw error;
   }
-
-  setActiveCompanyCookie(c, company.id);
-
-  return c.json(
-    {
-      company: toCompanyResponse(company),
-      activeCompanyId: company.id,
-    },
-    200,
-  );
 };

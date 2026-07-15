@@ -1,11 +1,10 @@
 import { z } from "zod";
 
-export const signUpSchema = z
+export const SignUpSchema = z
   .object({
     email: z
-      .email({
-        message: "Invalid email address.",
-      })
+      .string()
+      .email({ message: "Invalid email address." })
       .transform((val) => val.trim()),
     password: z
       .string()
@@ -28,8 +27,8 @@ export const signUpSchema = z
     path: ["confirmPassword"],
   });
 
-export const signInSchema = z.object({
-  email: z.email().transform((val) => val.trim()),
+export const SignInSchema = z.object({
+  email: z.string().email().transform((val) => val.trim()),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
@@ -44,7 +43,7 @@ export type AuthUser = {
   image: string | null | undefined;
 };
 
-export type session = {
+export type Session = {
   id: string;
   userId: string;
   expiresAt: Date;
@@ -57,6 +56,16 @@ export type session = {
 } | null;
 
 export type AuthSession = {
-  session: session;
+  session: Session;
   user: AuthUser;
 };
+
+export class AuthApiError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "AuthApiError";
+    this.status = status;
+  }
+}

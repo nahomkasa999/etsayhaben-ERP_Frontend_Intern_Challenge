@@ -23,15 +23,15 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 
-import type { CreateFiscalYearFormValue } from "../types";
+import type { FiscalYearFormValues } from "../types";
 import { validateFiscalYearForm } from "../services/fiscalYearService";
 import { useFiscalYear } from "../hooks/useFiscalyear";
 
-const DEFAULT_VALUE: CreateFiscalYearFormValue = {
-  fiscal_year_name: "",
-  calendar_type: "ETHIOPIAN",
-  start_date: "",
-  end_date: "",
+const DEFAULT_VALUE: FiscalYearFormValues = {
+  fiscalYearName: "",
+  calendarType: "ETHIOPIAN",
+  startDate: "",
+  endDate: "",
 };
 
 function formatDateInput(raw: string): string {
@@ -50,7 +50,7 @@ type Props = {
 
 export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
   const { createFiscalYear } = useFiscalYear();
-  const [values, setValues] = useState<CreateFiscalYearFormValue>(DEFAULT_VALUE);
+  const [values, setValues] = useState<FiscalYearFormValues>(DEFAULT_VALUE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,11 +65,11 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
   }, [open]);
 
   function handleChange(
-    field: keyof CreateFiscalYearFormValue,
+    field: keyof FiscalYearFormValues,
     value: string,
   ) {
     const formatted =
-      field === "start_date" || field === "end_date"
+      field === "startDate" || field === "endDate"
         ? formatDateInput(value)
         : value;
     setValues((prev) => ({ ...prev, [field]: formatted }));
@@ -127,17 +127,17 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
               <Label htmlFor="create-fiscal-year-name">Fiscal Year Name</Label>
               <Input
                 id="create-fiscal-year-name"
-                value={values.fiscal_year_name}
+                value={values.fiscalYearName}
                 onChange={(e) =>
-                  handleChange("fiscal_year_name", e.target.value)
+                  handleChange("fiscalYearName", e.target.value)
                 }
                 placeholder="FY2013"
                 disabled={isSubmitting}
-                aria-invalid={!!errors.fiscal_year_name}
+                aria-invalid={!!errors.fiscalYearName}
               />
-              {errors.fiscal_year_name && (
+              {errors.fiscalYearName && (
                 <p className="text-sm text-destructive">
-                  {errors.fiscal_year_name}
+                  {errors.fiscalYearName}
                 </p>
               )}
             </div>
@@ -145,9 +145,9 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
             <div className="grid gap-2">
               <Label htmlFor="create-calendar-type">Calendar Type</Label>
               <Select
-                value={values.calendar_type}
+                value={values.calendarType}
                 onValueChange={(value) => {
-                  if (value) handleChange("calendar_type", value);
+                  if (value) handleChange("calendarType", value);
                 }}
                 disabled={isSubmitting}
                 items={[
@@ -165,8 +165,8 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              {errors.calendar_type && (
-                <p className="text-sm text-destructive">{errors.calendar_type}</p>
+              {errors.calendarType && (
+                <p className="text-sm text-destructive">{errors.calendarType}</p>
               )}
             </div>
 
@@ -174,14 +174,14 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
               <Label htmlFor="create-start-date">Start Date</Label>
               <Input
                 id="create-start-date"
-                value={values.start_date}
-                onChange={(e) => handleChange("start_date", e.target.value)}
+                value={values.startDate}
+                onChange={(e) => handleChange("startDate", e.target.value)}
                 placeholder="01-11-2012"
                 disabled={isSubmitting}
-                aria-invalid={!!errors.start_date}
+                aria-invalid={!!errors.startDate}
               />
-              {errors.start_date && (
-                <p className="text-sm text-destructive">{errors.start_date}</p>
+              {errors.startDate && (
+                <p className="text-sm text-destructive">{errors.startDate}</p>
               )}
             </div>
 
@@ -189,14 +189,14 @@ export function CreateFiscalYearDialog({ open, onOpenChange }: Props) {
               <Label htmlFor="create-end-date">End Date</Label>
               <Input
                 id="create-end-date"
-                value={values.end_date}
-                onChange={(e) => handleChange("end_date", e.target.value)}
+                value={values.endDate}
+                onChange={(e) => handleChange("endDate", e.target.value)}
                 placeholder="30-10-2013"
                 disabled={isSubmitting}
-                aria-invalid={!!errors.end_date}
+                aria-invalid={!!errors.endDate}
               />
-              {errors.end_date && (
-                <p className="text-sm text-destructive">{errors.end_date}</p>
+              {errors.endDate && (
+                <p className="text-sm text-destructive">{errors.endDate}</p>
               )}
             </div>
           </div>

@@ -1,10 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { getCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import prisma from "@/lib/db";
 import type { AppVariables } from "@/app/api/types/context";
-import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+import { resolveActiveCompany } from "@/app/api/lib/resolveActiveCompany";
 import {
   ActivateFiscalYearResponseSchema,
   CloseFiscalYearResponseSchema,
@@ -61,58 +59,6 @@ const authErrorResponses = {
 
 type FiscalYearEnv = { Variables: AppVariables };
 
-type TenantContext =
-  | { ok: true; tenantId: string; companyId: string; userId: string }
-  | { ok: false; response: Response };
-
-async function resolveTenantContext(
-  c: Context<FiscalYearEnv>,
-): Promise<TenantContext> {
-  const session = c.get("session");
-  const user = c.get("user");
-
-  if (!session || !user) {
-    return { ok: false, response: c.json({ error: "Unauthorized" }, 401) };
-  }
-
-  const tenantId = session.activeOrganizationId;
-  if (!tenantId) {
-    return {
-      ok: false,
-      response: c.json({ error: "No active organization selected" }, 400),
-    };
-  }
-
-  const companyId = getCookie(c, ACTIVE_COMPANY_COOKIE);
-  if (!companyId) {
-    return {
-      ok: false,
-      response: c.json({ error: "No active company selected" }, 400),
-    };
-  }
-
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: tenantId,
-    },
-  });
-
-  if (!member) {
-    return { ok: false, response: c.json({ error: "Forbidden" }, 403) };
-  }
-
-  const company = await prisma.company.findFirst({
-    where: { id: companyId, organizationId: tenantId },
-  });
-
-  if (!company) {
-    return { ok: false, response: c.json({ error: "Company not found" }, 404) };
-  }
-
-  return { ok: true, tenantId, companyId, userId: user.id };
-}
-
 function repositoryErrorResponse(
   c: Context<FiscalYearEnv>,
   error: FiscalYearRepositoryError,
@@ -140,11 +86,11 @@ export const listFiscalYearsRoute = createRoute({
 });
 
 export const listFiscalYearsHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
-  const data = await listFiscalYears(context.tenantId, context.companyId);
-  return c.json(data, 200);
+  const fiscalYears = await listFiscalYears(context.tenantId, context.companyId);
+  return c.json({ fiscalYears }, 200);
 };
 
 export const getFiscalYearRoute = createRoute({
@@ -171,7 +117,7 @@ export const getFiscalYearRoute = createRoute({
 });
 
 export const getFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
@@ -206,7 +152,7 @@ export const getActiveFiscalYearRoute = createRoute({
 });
 
 export const getActiveFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   try {
@@ -242,10 +188,10 @@ export const getFiscalYearByDateRoute = createRoute({
 });
 
 export const getFiscalYearByDateHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
-  const { date, calendar_type } = FiscalYearByDateQuerySchema.parse(
+  const { date, calendarType } = FiscalYearByDateQuerySchema.parse(
     c.req.query(),
   );
 
@@ -254,7 +200,7 @@ export const getFiscalYearByDateHandler = async (c: Context<FiscalYearEnv>) => {
       context.tenantId,
       context.companyId,
       date,
-      calendar_type,
+      calendarType,
     );
     return c.json(data, 200);
   } catch (error) {
@@ -288,8 +234,8 @@ export const createFiscalYearRoute = createRoute({
         },
       },
     },
-    422: {
-      description: "Validation error",
+    409: {
+      description: "Conflict",
       content: { "application/json": { schema: ErrorSchema } },
     },
     ...authErrorResponses,
@@ -297,7 +243,7 @@ export const createFiscalYearRoute = createRoute({
 });
 
 export const createFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const body = CreateFiscalYearSchema.parse(await c.req.json());
@@ -312,7 +258,11 @@ export const createFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
     return c.json(data, 201);
   } catch (error) {
     if (error instanceof FiscalYearRepositoryError) {
-      return repositoryErrorResponse(c, error, 422);
+      return repositoryErrorResponse(
+        c,
+        error,
+        error.status === 409 ? 409 : 400,
+      );
     }
     throw error;
   }
@@ -344,12 +294,16 @@ export const updateFiscalYearRoute = createRoute({
         },
       },
     },
+    409: {
+      description: "Conflict",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
     ...authErrorResponses,
   },
 });
 
 export const updateFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
@@ -366,7 +320,11 @@ export const updateFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
     return c.json(data, 200);
   } catch (error) {
     if (error instanceof FiscalYearRepositoryError) {
-      return repositoryErrorResponse(c, error, 404);
+      return repositoryErrorResponse(
+        c,
+        error,
+        error.status === 409 ? 409 : 404,
+      );
     }
     throw error;
   }
@@ -400,7 +358,7 @@ export const activateFiscalYearRoute = createRoute({
 });
 
 export const activateFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
@@ -460,7 +418,7 @@ export const closeFiscalYearRoute = createRoute({
 });
 
 export const closeFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
@@ -522,7 +480,7 @@ export const reopenFiscalYearRoute = createRoute({
 });
 
 export const reopenFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
@@ -573,14 +531,14 @@ export const deleteFiscalYearRoute = createRoute({
 });
 
 export const deleteFiscalYearHandler = async (c: Context<FiscalYearEnv>) => {
-  const context = await resolveTenantContext(c);
+  const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
 
   const { id } = z.object({ id: z.string().uuid() }).parse(c.req.param());
 
   try {
-    const data = await deleteFiscalYear(id, context.tenantId, context.companyId);
-    return c.json(data, 200);
+    await deleteFiscalYear(id, context.tenantId, context.companyId);
+    return c.json({ success: true as const }, 200);
   } catch (error) {
     if (error instanceof FiscalYearRepositoryError) {
       return repositoryErrorResponse(c, error, 404);

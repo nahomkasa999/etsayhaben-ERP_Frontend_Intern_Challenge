@@ -39,3 +39,13 @@ export type CreateWorkspaceInput = z.infer<typeof CreateWorkspaceSchema>;
 export type OrganizationsListResponse = z.infer<
   typeof OrganizationsListResponseSchema
 >;
+
+export class WorkspaceApiError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "WorkspaceApiError";
+    this.status = status;
+  }
+}

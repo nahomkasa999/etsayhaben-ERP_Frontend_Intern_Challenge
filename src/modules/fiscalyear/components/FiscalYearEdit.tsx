@@ -37,8 +37,8 @@ export function FiscalYearEdit() {
     <div className="space-y-6">
       <div className="space-y-1">
         <div className="flex items-center gap-3">
-          <h1 className="page-title">{fiscalYear.fiscal_year_name}</h1>
-          {fiscalYear.is_active && <Badge variant="outline">Active</Badge>}
+          <h1 className="page-title">{fiscalYear.fiscalYearName}</h1>
+          {fiscalYear.isActive && <Badge variant="outline">Active</Badge>}
           <Badge
             variant={
               fiscalYear.status === "OPEN"

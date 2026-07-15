@@ -15,12 +15,12 @@ import {
   ReopenFiscalYearSchema,
   UpdateFiscalYearResponseSchema,
   UpdateFiscalYearSchema,
-  type CreateFiscalYearFormValue,
   type CreateFiscalYearInput,
   type FiscalYear,
+  type FiscalYearFormValues,
   type UpdateFiscalYearInput,
 } from "../types";
-import { useTenantStore } from "../store/FiscalYearStore";
+import { useTenantStore } from "../store/fiscalYearStore";
 
 const fiscalYearFetch = createFetch({
   baseURL: "/api/v1",
@@ -81,14 +81,14 @@ function createApiError(fetchError: unknown, fallback: string) {
   return new FiscalYearApiError(message, status);
 }
 
-export async function fetchFiscalYearLists() {
+export async function fetchFiscalYears() {
   const { data, error: fetchError } = await fiscalYearFetch("/fiscal-years");
 
   if (fetchError) {
     throw createApiError(fetchError, "Failed to fetch fiscal years");
   }
 
-  return data;
+  return data.fiscalYears;
 }
 
 export async function fetchFiscalYearById(id: string) {
@@ -193,16 +193,16 @@ export function useFiscalYear() {
   const queryClient = useQueryClient();
   const { tenantId, companyId } = useTenantStore();
 
-  const fiscalYearListsQuery = useQuery({
-    queryKey: ["fiscalYearLists", tenantId, companyId],
-    queryFn: fetchFiscalYearLists,
+  const fiscalYearQuery = useQuery({
+    queryKey: ["fiscalYears", tenantId, companyId],
+    queryFn: fetchFiscalYears,
     enabled: Boolean(tenantId && companyId),
   });
 
   const createMutation = useMutation({
     mutationFn: createFiscalYearRequest,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
     },
   });
 
@@ -215,7 +215,7 @@ export function useFiscalYear() {
       input: UpdateFiscalYearInput;
     }) => updateFiscalYearRequest(id, input),
     onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
       await queryClient.invalidateQueries({
         queryKey: ["fiscalYear", variables.id],
       });
@@ -225,14 +225,14 @@ export function useFiscalYear() {
   const deleteMutation = useMutation({
     mutationFn: deleteFiscalYearRequest,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
     },
   });
 
   const activateMutation = useMutation({
     mutationFn: activateFiscalYearRequest,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
       await queryClient.invalidateQueries({ queryKey: ["fiscalYear"] });
     },
   });
@@ -246,7 +246,7 @@ export function useFiscalYear() {
       justification: string;
     }) => closeFiscalYearRequest(id, justification),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
     },
   });
 
@@ -259,54 +259,56 @@ export function useFiscalYear() {
       justification: string;
     }) => reopenFiscalYearRequest(id, justification),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["fiscalYearLists"] });
+      await queryClient.invalidateQueries({ queryKey: ["fiscalYears"] });
     },
   });
 
-  async function createFiscalYear(values: CreateFiscalYearFormValue) {
+  const fiscalYears = fiscalYearQuery.data ?? [];
+
+  async function createFiscalYear(values: FiscalYearFormValues) {
     return createMutation.mutateAsync(values);
   }
 
-  async function updateFiscalYear(id: string, values: CreateFiscalYearFormValue) {
+  async function updateFiscalYear(id: string, values: FiscalYearFormValues) {
     return updateMutation.mutateAsync({
       id,
       input: {
-        fiscal_year_name: values.fiscal_year_name,
-        start_date: values.start_date,
-        end_date: values.end_date,
+        fiscalYearName: values.fiscalYearName,
+        startDate: values.startDate,
+        endDate: values.endDate,
       },
     });
   }
 
-  async function deleteFiscalYear(id: string) {
+  async function deleteFiscalYearFn(id: string) {
     return deleteMutation.mutateAsync(id);
   }
 
-  async function activateFiscalYear(id: string) {
+  async function activateFiscalYearFn(id: string) {
     return activateMutation.mutateAsync(id);
   }
 
-  async function closeFiscalYear(id: string, justification?: string) {
+  async function closeFiscalYearFn(id: string, justification?: string) {
     return closeMutation.mutateAsync({
       id,
       justification: justification || "Closing fiscal year",
     });
   }
 
-  async function reopenFiscalYear(id: string, justification: string) {
+  async function reopenFiscalYearFn(id: string, justification: string) {
     return reopenMutation.mutateAsync({ id, justification });
   }
 
   return {
-    fiscalYearListsAllResponse: fiscalYearListsQuery.data,
-    fiscalYearListsIsLoading: fiscalYearListsQuery.isLoading,
-    fiscalYearListsIsError: fiscalYearListsQuery.isError,
+    fiscalYears,
+    isLoading: fiscalYearQuery.isLoading,
+    isError: fiscalYearQuery.isError,
     createFiscalYear,
     updateFiscalYear,
-    deleteFiscalYear,
-    activateFiscalYear,
-    closeFiscalYear,
-    reopenFiscalYear,
+    deleteFiscalYear: deleteFiscalYearFn,
+    activateFiscalYear: activateFiscalYearFn,
+    closeFiscalYear: closeFiscalYearFn,
+    reopenFiscalYear: reopenFiscalYearFn,
   };
 }
 
@@ -319,3 +321,7 @@ export function useFiscalYearById(id: string) {
     enabled: Boolean(id && tenantId && companyId),
   });
 }
+
+export const createFiscalYear = createFiscalYearRequest;
+export const updateFiscalYear = updateFiscalYearRequest;
+export const deleteFiscalYear = deleteFiscalYearRequest;

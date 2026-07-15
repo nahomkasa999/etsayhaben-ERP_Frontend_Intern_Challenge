@@ -2,7 +2,7 @@
 
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { signInSchema } from "@/modules/auth/types";
+import { SignInSchema as signInSchema } from "@/modules/auth/types";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { formatFieldErrors } from "@/modules/auth/services/authService";
 import { Button } from "@/shared/components/ui/button";

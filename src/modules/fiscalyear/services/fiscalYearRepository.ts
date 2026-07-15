@@ -1,13 +1,12 @@
 import type { FiscalYear as PrismaFiscalYear } from "@/generated/prisma/client";
 import prisma from "@/lib/db";
-import { deriveFiscalYearDates } from "./convertCalender";
+import { deriveFiscalYearDates } from "./convertCalendar";
 import type {
   ActivateFiscalYearResponse,
   CloseFiscalYearResponse,
   CreateFiscalYearInput,
   FiscalYear,
-  FiscalYearList,
-  FiscalYearListResponse,
+  FiscalYearListItem,
   ReopenFiscalYearResponse,
   UpdateFiscalYearInput,
   UpdateFiscalYearResponse,
@@ -16,8 +15,8 @@ import type {
 export class FiscalYearRepositoryError extends Error {
   status: number;
 
-  constructor(detail: string, status = 400) {
-    super(detail);
+  constructor(message: string, status = 400) {
+    super(message);
     this.name = "FiscalYearRepositoryError";
     this.status = status;
   }
@@ -30,41 +29,41 @@ function toIso(value: Date | null | undefined) {
 function toFiscalYearDto(record: PrismaFiscalYear): FiscalYear {
   return {
     id: record.id,
-    tenant_id: record.tenant_id,
-    company_id: record.company_id,
-    fiscal_year_name: record.fiscal_year_name,
-    calendar_type: record.calendar_type,
-    start_date_eth: record.start_date_eth,
-    start_date_gre: record.start_date_gre,
-    end_date_eth: record.end_date_eth,
-    end_date_gre: record.end_date_gre,
+    tenantId: record.tenant_id,
+    companyId: record.company_id,
+    fiscalYearName: record.fiscal_year_name,
+    calendarType: record.calendar_type,
+    startDateEth: record.start_date_eth,
+    startDateGre: record.start_date_gre,
+    endDateEth: record.end_date_eth,
+    endDateGre: record.end_date_gre,
     status: record.status,
-    is_active: record.is_Active,
-    created_by: record.created_by,
-    created_at: record.created_at.toISOString(),
-    updated_at: record.updated_at.toISOString(),
-    activated_by: record.activated_by ?? undefined,
-    activated_at: toIso(record.activated_at),
-    updated_by: record.updated_by ?? undefined,
-    closed_by: record.closed_by ?? undefined,
-    closed_at: toIso(record.closed_at),
-    reopened_by: record.reopened_by ?? undefined,
-    reopened_at: toIso(record.reopened_at),
-    reopen_expires_at: toIso(record.reopen_expires_at),
+    isActive: record.is_Active,
+    createdBy: record.created_by,
+    createdAt: record.created_at.toISOString(),
+    updatedAt: record.updated_at.toISOString(),
+    activatedBy: record.activated_by ?? undefined,
+    activatedAt: toIso(record.activated_at),
+    updatedBy: record.updated_by ?? undefined,
+    closedBy: record.closed_by ?? undefined,
+    closedAt: toIso(record.closed_at),
+    reopenedBy: record.reopened_by ?? undefined,
+    reopenedAt: toIso(record.reopened_at),
+    reopenExpiresAt: toIso(record.reopen_expires_at),
     justification: record.justification ?? undefined,
   };
 }
 
-function toListItem(record: PrismaFiscalYear): FiscalYearList {
+function toListItem(record: PrismaFiscalYear): FiscalYearListItem {
   return {
     id: record.id,
-    fiscal_year_name: record.fiscal_year_name,
+    fiscalYearName: record.fiscal_year_name,
     status: record.status,
-    start_date_eth: record.start_date_eth,
-    end_date_eth: record.end_date_eth,
-    start_date_gre: record.start_date_gre,
-    end_date_gre: record.end_date_gre,
-    is_active: record.is_Active,
+    startDateEth: record.start_date_eth,
+    endDateEth: record.end_date_eth,
+    startDateGre: record.start_date_gre,
+    endDateGre: record.end_date_gre,
+    isActive: record.is_Active,
   };
 }
 
@@ -138,13 +137,9 @@ async function getCompanyFiscalYears(tenantId: string, companyId: string) {
 export async function listFiscalYears(
   tenantId: string,
   companyId: string,
-): Promise<FiscalYearListResponse> {
+): Promise<FiscalYearListItem[]> {
   const fiscalYears = await getCompanyFiscalYears(tenantId, companyId);
-
-  return {
-    count: fiscalYears.length,
-    results: fiscalYears.map(toListItem),
-  };
+  return fiscalYears.map(toListItem);
 }
 
 export async function getFiscalYearById(
@@ -157,7 +152,7 @@ export async function getFiscalYearById(
 
   if (!fiscalYear) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
@@ -184,7 +179,7 @@ export async function getFiscalYearByDate(
   companyId: string,
   date: string,
   calendarType: "ETHIOPIAN" | "GREGORIAN",
-): Promise<FiscalYearList> {
+): Promise<FiscalYearListItem> {
   const fiscalYears = await getCompanyFiscalYears(tenantId, companyId);
   const result = fiscalYears.find((fy) => {
     if (calendarType === "ETHIOPIAN") {
@@ -218,8 +213,8 @@ export async function createFiscalYear(
   createdBy: string,
   input: CreateFiscalYearInput,
 ): Promise<FiscalYear> {
-  if (new Date(input.start_date) >= new Date(input.end_date)) {
-    throw new FiscalYearRepositoryError("start_date must be before end_date.", 422);
+  if (new Date(input.startDate) >= new Date(input.endDate)) {
+    throw new FiscalYearRepositoryError("Start date must be before end date.", 400);
   }
 
   const existingCount = await prisma.fiscalYear.count({
@@ -227,9 +222,9 @@ export async function createFiscalYear(
   });
   const isFirstFiscalYear = existingCount === 0;
   const derivedDates = deriveFiscalYearDates(
-    input.calendar_type,
-    input.start_date,
-    input.end_date,
+    input.calendarType,
+    input.startDate,
+    input.endDate,
   );
   const now = new Date();
 
@@ -237,8 +232,8 @@ export async function createFiscalYear(
     data: {
       tenant_id: tenantId,
       company_id: companyId,
-      fiscal_year_name: input.fiscal_year_name,
-      calendar_type: input.calendar_type,
+      fiscal_year_name: input.fiscalYearName,
+      calendar_type: input.calendarType,
       ...derivedDates,
       status: "OPEN",
       is_Active: isFirstFiscalYear,
@@ -268,17 +263,17 @@ export async function updateFiscalYear(
 
   if (!existing) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
 
   const derivedDates =
-    input.start_date && input.end_date
+    input.startDate && input.endDate
       ? deriveFiscalYearDates(
           existing.calendar_type,
-          input.start_date,
-          input.end_date,
+          input.startDate,
+          input.endDate,
         )
       : {};
 
@@ -286,19 +281,19 @@ export async function updateFiscalYear(
     where: { id },
     data: {
       ...derivedDates,
-      fiscal_year_name: input.fiscal_year_name ?? existing.fiscal_year_name,
+      fiscal_year_name: input.fiscalYearName ?? existing.fiscal_year_name,
       updated_by: updatedBy,
     },
   });
 
   return {
     id: updated.id,
-    fiscal_year_name: updated.fiscal_year_name,
-    start_date_eth: updated.start_date_eth,
-    end_date_eth: updated.end_date_eth,
+    fiscalYearName: updated.fiscal_year_name,
+    startDateEth: updated.start_date_eth,
+    endDateEth: updated.end_date_eth,
     status: updated.status,
-    updated_by: updated.updated_by!,
-    updated_at: updated.updated_at.toISOString(),
+    updatedBy: updated.updated_by!,
+    updatedAt: updated.updated_at.toISOString(),
   };
 }
 
@@ -314,7 +309,7 @@ export async function activateFiscalYear(
 
   if (!existing) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
@@ -350,9 +345,9 @@ export async function activateFiscalYear(
   return {
     id,
     status: existing.status,
-    is_active: true,
-    activated_by: activatedBy,
-    activated_at: now.toISOString(),
+    isActive: true,
+    activatedBy,
+    activatedAt: now.toISOString(),
   };
 }
 
@@ -369,13 +364,13 @@ export async function closeFiscalYear(
 
   if (!existing) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
 
   if (existing.status === "CLOSED") {
-    throw new FiscalYearRepositoryError("Fiscal year is already Closed.", 409);
+    throw new FiscalYearRepositoryError("Fiscal year is already closed.", 409);
   }
 
   const now = new Date();
@@ -393,8 +388,8 @@ export async function closeFiscalYear(
   return {
     id,
     status: "CLOSED",
-    closed_by: closedBy,
-    closed_at: updated.closed_at!.toISOString(),
+    closedBy,
+    closedAt: updated.closed_at!.toISOString(),
     justification,
   };
 }
@@ -412,13 +407,13 @@ export async function reopenFiscalYear(
 
   if (!existing) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
 
   if (existing.status === "REOPENED") {
-    throw new FiscalYearRepositoryError("Fiscal year is already Reopened.", 409);
+    throw new FiscalYearRepositoryError("Fiscal year is already reopened.", 409);
   }
 
   if (existing.reopened_at) {
@@ -445,9 +440,9 @@ export async function reopenFiscalYear(
   return {
     id,
     status: "REOPENED",
-    reopened_by: reopenedBy,
-    reopened_at: updated.reopened_at!.toISOString(),
-    reopen_expires_at: updated.reopen_expires_at!.toISOString(),
+    reopenedBy,
+    reopenedAt: updated.reopened_at!.toISOString(),
+    reopenExpiresAt: updated.reopen_expires_at!.toISOString(),
     justification,
   };
 }
@@ -456,19 +451,17 @@ export async function deleteFiscalYear(
   id: string,
   tenantId: string,
   companyId: string,
-): Promise<{ detail: string }> {
+): Promise<void> {
   const existing = await prisma.fiscalYear.findFirst({
     where: { id, tenant_id: tenantId, company_id: companyId },
   });
 
   if (!existing) {
     throw new FiscalYearRepositoryError(
-      "No fiscal year found for the given id.",
+      "Fiscal year not found",
       404,
     );
   }
 
   await prisma.fiscalYear.delete({ where: { id } });
-
-  return { detail: "Deleted fiscal year." };
 }

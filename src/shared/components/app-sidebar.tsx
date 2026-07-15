@@ -23,7 +23,7 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { useInventoryStatsStore } from "@/shared/store/inventoryStatsStore";
 import { useEmployeeStatsStore } from "@/shared/store/employeeStatsStore";
-import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
+import { useTenantStore } from "@/modules/fiscalyear/store/fiscalYearStore";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();

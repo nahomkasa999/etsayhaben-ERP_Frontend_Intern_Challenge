@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/ui/card";
 
 import { useFiscalYear } from "../hooks/useFiscalyear";
-import { useTenantStore } from "../store/FiscalYearStore";
+import { useTenantStore } from "../store/fiscalYearStore";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FiscalYearApiError } from "../types";
 import type { FiscalYear } from "../types";
@@ -48,7 +48,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
 
   const canActivate =
-    !fiscalYear.is_active &&
+    !fiscalYear.isActive &&
     (fiscalYear.status === "OPEN" || fiscalYear.status === "REOPENED");
 
   function closeDialog() {
@@ -67,7 +67,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleDelete() {
     setDialog({
       title: "Delete Fiscal Year",
-      message: `Are you sure you want to delete "${fiscalYear.fiscal_year_name}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${fiscalYear.fiscalYearName}"? This action cannot be undone.`,
       confirmText: "Delete",
       danger: true,
       onConfirm: async () => {
@@ -75,12 +75,10 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("delete");
         try {
           await deleteFiscalYear(fiscalYear.id);
-          router.push(
-            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
-          );
+          router.push(`/fiscalyear`);
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            showError(error.detail);
+            showError(error.message);
           } else {
             showError("Failed to delete fiscal year.");
           }
@@ -94,7 +92,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleClose() {
     setDialog({
       title: "Close Fiscal Year",
-      message: `Provide a justification for closing "${fiscalYear.fiscal_year_name}".`,
+      message: `Provide a justification for closing "${fiscalYear.fiscalYearName}".`,
       warning:
         "This fiscal year has already been reopened once. If you close it now, it cannot be reopened again.",
       confirmText: "Close",
@@ -107,12 +105,10 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("close");
         try {
           await closeFiscalYear(fiscalYear.id, justification);
-          router.push(
-            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
-          );
+          router.push(`/fiscalyear`);
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            showError(error.detail);
+            showError(error.message);
           } else {
             showError("Failed to close fiscal year.");
           }
@@ -126,7 +122,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleActivate() {
     setDialog({
       title: "Activate Fiscal Year",
-      message: `Make "${fiscalYear.fiscal_year_name}" the active fiscal year? The currently active fiscal year will be deactivated.`,
+      message: `Make "${fiscalYear.fiscalYearName}" the active fiscal year? The currently active fiscal year will be deactivated.`,
       confirmText: "Activate",
       onConfirm: async () => {
         closeDialog();
@@ -135,7 +131,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
           await activateFiscalYear(fiscalYear.id);
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            showError(error.detail);
+            showError(error.message);
           } else {
             showError("Failed to activate fiscal year.");
           }
@@ -149,7 +145,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
   function handleReopen() {
     setDialog({
       title: "Reopen Fiscal Year",
-      message: `Provide a justification for reopening "${fiscalYear.fiscal_year_name}".`,
+      message: `Provide a justification for reopening "${fiscalYear.fiscalYearName}".`,
       warning:
         "Reopening is allowed only once. After this fiscal year is closed again, it cannot be reopened a second time.",
       confirmText: "Reopen",
@@ -162,12 +158,10 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("reopen");
         try {
           await reopenFiscalYear(fiscalYear.id, justification);
-          router.push(
-            `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`,
-          );
+          router.push(`/fiscalyear`);
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
-            showError(error.detail);
+            showError(error.message);
           } else {
             showError("Failed to reopen fiscal year.");
           }
@@ -231,7 +225,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
           <CardDescription>
             Closing, reopening, or deleting a fiscal year can affect dependent
             records. Proceed with care.
-            {fiscalYear.reopened_at && fiscalYear.status !== "REOPENED" ? (
+            {fiscalYear.reopenedAt && fiscalYear.status !== "REOPENED" ? (
               <span className="mt-2 block font-medium text-warning">
                 This fiscal year has already been reopened once and cannot be
                 reopened again.
@@ -242,7 +236,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         <CardFooter className="border-0 bg-transparent">
           <div className="grid w-full grid-cols-2 gap-4">
             {(fiscalYear.status === "OPEN" ||
-              (!!fiscalYear.reopened_at && fiscalYear.status !== "CLOSED")) && (
+              (!!fiscalYear.reopenedAt && fiscalYear.status !== "CLOSED")) && (
               <Button
                 variant="destructive"
                 className="w-full"
@@ -260,7 +254,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
               </Button>
             )}
 
-            {fiscalYear.status === "CLOSED" && !fiscalYear.reopened_at && (
+            {fiscalYear.status === "CLOSED" && !fiscalYear.reopenedAt && (
               <Button
                 variant="outline"
                 className="w-full"

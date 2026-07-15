@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { APIError } from "better-auth/api";
 import { setCookie } from "hono/cookie";
 import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
@@ -14,6 +15,11 @@ import {
   SetActiveWorkspaceSchema,
   WorkspaceSchema,
 } from "@/modules/workspace/types";
+import {
+  ensureUniqueOrganizationSlug,
+  listOrganizations,
+  WorkspaceRepositoryError,
+} from "@/modules/workspace/services/workspaceRepository";
 
 const ErrorSchema = z
   .object({
@@ -21,72 +27,29 @@ const ErrorSchema = z
   })
   .openapi("OrganizationErrorResponse");
 
+const authErrorResponses = {
+  400: {
+    description: "Validation error",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+  401: {
+    description: "Unauthorized",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+  403: {
+    description: "Forbidden",
+    content: { "application/json": { schema: ErrorSchema } },
+  },
+} as const;
+
 type OrganizationEnv = { Variables: AppVariables };
 
-function toCompanySummary(company: {
-  id: string;
-  organizationId: string;
-  name: string;
-  slug: string;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: company.id,
-    organizationId: company.organizationId,
-    name: company.name,
-    slug: company.slug,
-    createdAt: company.createdAt.toISOString(),
-    updatedAt: company.updatedAt.toISOString(),
-  };
-}
-
-function toWorkspaceResponse(organization: {
-  id: string;
-  name: string;
-  slug: string;
-  logo: string | null;
-  createdAt: Date;
-  companies?: {
-    id: string;
-    organizationId: string;
-    name: string;
-    slug: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }[];
-  _count?: {
-    companies: number;
-  };
-}) {
-  return {
-    id: organization.id,
-    name: organization.name,
-    slug: organization.slug,
-    logo: organization.logo,
-    createdAt: organization.createdAt.toISOString(),
-    companyCount: organization._count?.companies ?? organization.companies?.length ?? 0,
-    companies: (organization.companies ?? []).map(toCompanySummary),
-  };
-}
-
-async function ensureUniqueOrganizationSlug(baseSlug: string) {
-  const slug = baseSlug || "workspace";
-  let suffix = 0;
-
-  while (true) {
-    const candidate = suffix === 0 ? slug : `${slug}-${suffix}`;
-    const existing = await prisma.organization.findFirst({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return candidate;
-    }
-
-    suffix += 1;
-  }
+function repositoryErrorResponse(
+  c: Context<OrganizationEnv>,
+  error: WorkspaceRepositoryError,
+  status: ContentfulStatusCode,
+) {
+  return c.json({ error: error.message }, status);
 }
 
 export const listOrganizationsRoute = createRoute({
@@ -103,10 +66,7 @@ export const listOrganizationsRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -118,38 +78,22 @@ export const listOrganizationsHandler = async (c: Context<OrganizationEnv>) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const organizations = await prisma.organization.findMany({
-    where: {
-      members: {
-        some: {
-          userId: user.id,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-    include: {
-      companies: {
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-      _count: {
-        select: {
-          companies: true,
-        },
-      },
-    },
-  });
+  try {
+    const organizations = await listOrganizations(user.id);
 
-  return c.json(
-    {
-      organizations: organizations.map(toWorkspaceResponse),
-      activeOrganizationId: session.activeOrganizationId ?? null,
-    },
-    200,
-  );
+    return c.json(
+      {
+        organizations,
+        activeOrganizationId: session.activeOrganizationId ?? null,
+      },
+      200,
+    );
+  } catch (error) {
+    if (error instanceof WorkspaceRepositoryError) {
+      return repositoryErrorResponse(c, error, 400);
+    }
+    throw error;
+  }
 };
 
 export const createOrganizationRoute = createRoute({
@@ -175,14 +119,7 @@ export const createOrganizationRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Validation error",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -231,14 +168,12 @@ export const createOrganizationHandler = async (c: Context<OrganizationEnv>) => 
         slug: organization.slug,
         logo: organization.logo ?? null,
         createdAt: organization.createdAt.toISOString(),
-        companyCount: 0,
-        companies: [],
       },
       201,
     );
   } catch (error) {
     if (error instanceof APIError) {
-      return c.json({ error: error.message }, error.statusCode as 400);
+      return c.json({ error: error.message }, (error.statusCode as 400 | 401 | 403 | 404) ?? 400);
     }
     throw error;
   }
@@ -267,18 +202,7 @@ export const setActiveOrganizationRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Validation error",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    401: {
-      description: "Unauthorized",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: ErrorSchema } },
-    },
+    ...authErrorResponses,
   },
 });
 
@@ -324,7 +248,7 @@ export const setActiveOrganizationHandler = async (
     return c.json({ activeOrganizationId: organizationId }, 200);
   } catch (error) {
     if (error instanceof APIError) {
-      return c.json({ error: error.message }, error.statusCode as 400);
+      return c.json({ error: error.message }, (error.statusCode as 400 | 401 | 403 | 404) ?? 400);
     }
     throw error;
   }

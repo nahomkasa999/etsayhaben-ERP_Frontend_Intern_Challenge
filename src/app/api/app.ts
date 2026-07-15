@@ -103,16 +103,16 @@ app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/health", healthApp);
 
-app.openapi(listOrganizationsRoute, listOrganizationsHandler);
-app.openapi(createOrganizationRoute, createOrganizationHandler);
-app.openapi(setActiveOrganizationRoute, setActiveOrganizationHandler);
+app.openapi(listOrganizationsRoute, listOrganizationsHandler as never);
+app.openapi(createOrganizationRoute, createOrganizationHandler as never);
+app.openapi(setActiveOrganizationRoute, setActiveOrganizationHandler as never);
 
-app.openapi(listCompaniesRoute, listCompaniesHandler);
-app.openapi(createCompanyRoute, createCompanyHandler);
-app.openapi(getCompanyRoute, getCompanyHandler);
-app.openapi(updateCompanyRoute, updateCompanyHandler);
-app.openapi(deleteCompanyRoute, deleteCompanyHandler);
-app.openapi(selectCompanyRoute, selectCompanyHandler);
+app.openapi(listCompaniesRoute, listCompaniesHandler as never);
+app.openapi(createCompanyRoute, createCompanyHandler as never);
+app.openapi(getCompanyRoute, getCompanyHandler as never);
+app.openapi(updateCompanyRoute, updateCompanyHandler as never);
+app.openapi(deleteCompanyRoute, deleteCompanyHandler as never);
+app.openapi(selectCompanyRoute, selectCompanyHandler as never);
 
 app.openapi(listFiscalYearsRoute, listFiscalYearsHandler as never);
 app.openapi(getActiveFiscalYearRoute, getActiveFiscalYearHandler as never);

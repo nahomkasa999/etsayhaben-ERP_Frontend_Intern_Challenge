@@ -1,4 +1,4 @@
-import { CreateFiscalYearFormValue } from "../types";
+import type { FiscalYearFormValues } from "../types";
 
 const DDMMYYYY = /^\d{2}-\d{2}-\d{4}$/;
 
@@ -19,33 +19,33 @@ function dateToNumber(date: ParsedDate): number {
 }
 
 export function validateFiscalYearForm(
-  values: CreateFiscalYearFormValue,
+  values: FiscalYearFormValues,
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (!values.fiscal_year_name.trim()) {
-    errors.fiscal_year_name = "Fiscal year name is required";
+  if (!values.fiscalYearName.trim()) {
+    errors.fiscalYearName = "Fiscal year name is required";
   }
 
-  if (!values.start_date) {
-    errors.start_date = "Start date is required";
-  } else if (!parseEthDate(values.start_date)) {
-    errors.start_date =
+  if (!values.startDate) {
+    errors.startDate = "Start date is required";
+  } else if (!parseEthDate(values.startDate)) {
+    errors.startDate =
       "Start date must be in DD-MM-YYYY format with a valid date";
   }
 
-  if (!values.end_date) {
-    errors.end_date = "End date is required";
-  } else if (!parseEthDate(values.end_date)) {
-    errors.end_date =
+  if (!values.endDate) {
+    errors.endDate = "End date is required";
+  } else if (!parseEthDate(values.endDate)) {
+    errors.endDate =
       "End date must be in DD-MM-YYYY format with a valid date";
   }
 
-  if (!errors.start_date && !errors.end_date) {
-    const startParsed = parseEthDate(values.start_date);
-    const endParsed = parseEthDate(values.end_date);
+  if (!errors.startDate && !errors.endDate) {
+    const startParsed = parseEthDate(values.startDate);
+    const endParsed = parseEthDate(values.endDate);
     if (startParsed && endParsed && dateToNumber(startParsed) >= dateToNumber(endParsed)) {
-      errors.end_date = "End date must be after start date";
+      errors.endDate = "End date must be after start date";
     }
   }
 

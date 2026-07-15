@@ -24,9 +24,9 @@ export function FiscalYearTable() {
   const [calendarView, setCalendarView] = useState<CalendarView>("ETHIOPIAN")
 
   const {
-    fiscalYearListsAllResponse,
-    fiscalYearListsIsLoading,
-    fiscalYearListsIsError,
+    fiscalYears,
+    isLoading,
+    isError,
   } = useFiscalYear()
 
   const columns = useMemo(
@@ -34,7 +34,7 @@ export function FiscalYearTable() {
     [calendarView]
   )
 
-  if (fiscalYearListsIsLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -42,7 +42,7 @@ export function FiscalYearTable() {
     )
   }
 
-  if (fiscalYearListsIsError) {
+  if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
         <p className="text-sm text-muted-foreground">
@@ -55,13 +55,11 @@ export function FiscalYearTable() {
     )
   }
 
-  const data = fiscalYearListsAllResponse?.results ?? []
-
   return (
     <DataTable
       columns={columns}
-      data={data}
-      filterColumn="fiscal_year_name"
+      data={fiscalYears}
+      filterColumn="fiscalYearName"
       filterPlaceholder="Filter fiscal years..."
       getRowId={(row) => row.id}
       toolbar={

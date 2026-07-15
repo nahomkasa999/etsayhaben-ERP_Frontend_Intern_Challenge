@@ -18,7 +18,7 @@ export const useTenantStore = create<TenantState>((set) => ({
   setTenant: (tenantId, companyId) => set({ tenantId, companyId }),
 }));
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useFiscalAuthStore = create<AuthState>((set) => ({
   userId: "",
   userName: "",
   setUser: (userId, userName) => set({ userId, userName }),

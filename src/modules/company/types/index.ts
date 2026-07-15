@@ -14,10 +14,7 @@ export const CreateCompanySchema = z.object({
   slug: z.string().optional(),
 });
 
-export const UpdateCompanySchema = z.object({
-  name: z.string().min(1).optional(),
-  slug: z.string().optional(),
-});
+export const UpdateCompanySchema = CreateCompanySchema.partial();
 
 export const SelectCompanySchema = z.object({
   companyId: z.string().uuid(),

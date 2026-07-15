@@ -32,9 +32,8 @@ function getInitials(name: string) {
 export default function ProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const {
+    workspaces,
     activeWorkspace,
-    totalOrganizations,
-    totalCompanies,
     isLoading: isLoadingWorkspaces,
   } = useWorkspace();
   const { activeCompany, isLoading: isLoadingCompanies } = useCompany();
@@ -124,11 +123,11 @@ export default function ProfilePage() {
             </div>
             <div className="flex justify-between gap-4 border-b pb-2">
               <span className="text-muted-foreground">Total organizations</span>
-              <span className="font-medium">{totalOrganizations}</span>
+              <span className="font-medium">{workspaces.length}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Total companies</span>
-              <span className="font-medium">{totalCompanies}</span>
+              <span className="font-medium">{workspaces.reduce((sum, w) => sum + w.companyCount, 0)}</span>
             </div>
           </CardContent>
         </Card>
