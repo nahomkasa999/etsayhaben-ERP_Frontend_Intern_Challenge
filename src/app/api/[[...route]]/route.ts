@@ -1,18 +1,43 @@
-import { Hono } from "hono";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { swaggerUI } from "@hono/swagger-ui";
 import { handle } from "hono/vercel";
 import { auth } from "@/lib/auth";
-import { fiscalYearApp } from "@/modules/fiscalyear/api/route";
+import { openApiDocumentConfig, swaggerUiUrl } from "@/shared/lib/openapi";
 
-const app = new Hono().basePath("/api/v1");
+const HealthResponseSchema = z
+  .object({
+    status: z.literal("ok").openapi({ example: "ok" }),
+  })
+  .openapi("HealthResponse");
+
+const app = new OpenAPIHono().basePath("/api/v1");
+
+const healthRoute = createRoute({
+  method: "get",
+  path: "/health",
+  tags: ["System"],
+  summary: "Health check",
+  responses: {
+    200: {
+      description: "API is healthy",
+      content: {
+        "application/json": {
+          schema: HealthResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+app.openapi(healthRoute, (c) => c.json({ status: "ok" as const }, 200));
 
 app.on(["POST", "GET"], "/auth*", (c) => auth.handler(c.req.raw));
 
-app.route("/fiscalyear", fiscalYearApp);
-// Example endpoint: hits /api/health
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.doc("/doc", openApiDocumentConfig);
+app.get("/ui", swaggerUI({ url: swaggerUiUrl }));
 
-// Export methods for Next.js to handle incoming requests
 export const GET = handle(app);
 export const POST = handle(app);
 export const PUT = handle(app);
+export const PATCH = handle(app);
 export const DELETE = handle(app);

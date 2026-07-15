@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 
-// Create a specialized sub-app for fiscal year logic
 export const fiscalYearApp = new Hono();
 
 fiscalYearApp.get("/", (c) => {
