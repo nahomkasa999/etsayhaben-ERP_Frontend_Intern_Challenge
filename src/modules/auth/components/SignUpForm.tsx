@@ -8,7 +8,6 @@ import { formatFieldErrors } from "@/modules/auth/services/authService";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -18,7 +17,6 @@ import {
 } from "@/shared/components/ui/card";
 
 export default function SignUpForm() {
-  const router = useRouter();
   const { signUp, isLoading, error, setError } = useAuth();
 
   const form = useForm({
@@ -37,7 +35,6 @@ export default function SignUpForm() {
         email: value.email,
         password: value.password,
       });
-      router.push("/dashboard");
     },
   });
 

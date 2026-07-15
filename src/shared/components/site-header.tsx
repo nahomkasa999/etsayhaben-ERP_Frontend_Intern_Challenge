@@ -26,6 +26,7 @@ const sectionTitles: Record<string, string> = {
   inventory: "Inventory",
   hr: "HR",
   fiscalyear: "Fiscal Year",
+  profile: "Profile",
 };
 
 const nestedLabels: Record<string, string> = {

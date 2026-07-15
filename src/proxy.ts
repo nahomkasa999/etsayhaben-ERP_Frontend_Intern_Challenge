@@ -23,5 +23,6 @@ export const config = {
     "/fiscalyear/:path*",
     "/hr/:path*",
     "/inventory/:path*",
+    "/profile/:path*",
   ],
 };

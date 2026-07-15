@@ -42,3 +42,5 @@ next-env.d.ts
 Guide.md
 modulegoal.md
 /src/generated/prisma
+.agents
+skills-lock.json

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Avatar,
   AvatarFallback,
@@ -25,23 +26,28 @@ import {
   CircleUserRoundIcon,
   LogOutIcon,
 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 
-export function NavUser() {
-  const { isMobile } = useSidebar();
-  const { signOut } = useAuth();
-  const user = useAuthStore((s) => s.user);
-
-  const name = user?.name ?? "User";
-  const email = user?.email ?? "Not signed in";
-  const avatar = user?.image ?? "";
-  const initials = name
+function getInitials(name: string) {
+  return name
     .split(" ")
+    .filter(Boolean)
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+export function NavUser() {
+  const { isMobile } = useSidebar();
+  const { signOut } = useAuth();
+  const { data: session, isPending } = authClient.useSession();
+
+  const name = session?.user?.name || (isPending ? "Loading..." : "User");
+  const email = session?.user?.email || (isPending ? "" : "Not signed in");
+  const avatar = session?.user?.image ?? "";
+  const initials = getInitials(name) || "U";
 
   return (
     <SidebarMenu>
@@ -93,7 +99,7 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/profile" />}>
                 <CircleUserRoundIcon />
                 Account
               </DropdownMenuItem>

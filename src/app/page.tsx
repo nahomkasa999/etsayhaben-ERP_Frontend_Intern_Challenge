@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AuthNavActions } from "@/shared/components/layout/AuthNavActions";
+import { LandingCta } from "@/shared/components/layout/LandingCta";
 
 export default function Home() {
   return (
@@ -8,20 +10,7 @@ export default function Home() {
           <span className="font-sans text-xl font-bold tracking-tight text-foreground">
             EthioERP
           </span>
-          <div className="flex gap-4">
-            <Link
-              href="/signin"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/90"
-            >
-              Sign Up
-            </Link>
-          </div>
+          <AuthNavActions />
         </nav>
       </header>
 
@@ -33,12 +22,7 @@ export default function Home() {
           Enterprise resource planning built for Ethiopian businesses
         </p>
         <div className="mt-8 flex gap-4">
-          <Link
-            href="/signin"
-            className="rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
-          >
-            Get Started
-          </Link>
+          <LandingCta />
           <Link
             href="/about"
             className="rounded-md bg-card px-6 py-3 text-base font-semibold text-card-foreground shadow-md ring-1 ring-border transition-colors hover:bg-accent hover:text-accent-foreground"

@@ -24,9 +24,12 @@ function toAuthUser(user: {
 
 export function useAuth() {
   const router = useRouter();
-  const { user, setUser, logout: clearUser } = useAuthStore();
+  const { setUser, logout: clearUser } = useAuthStore();
+  const { data: session } = authClient.useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const user = session?.user ? toAuthUser(session.user) : null;
 
   async function signUp(values: {
     name: string;
@@ -52,7 +55,8 @@ export function useAuth() {
         setUser(toAuthUser(data.user));
       }
 
-      router.push("/");
+      router.push("/dashboard");
+      router.refresh();
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
@@ -81,7 +85,8 @@ export function useAuth() {
         setUser(toAuthUser(data.user));
       }
 
-      router.push("/");
+      router.push("/dashboard");
+      router.refresh();
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
@@ -99,6 +104,7 @@ export function useAuth() {
       await authClient.signOut();
       clearUser();
       router.push("/signin");
+      router.refresh();
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign out failed");
