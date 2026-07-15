@@ -39,6 +39,32 @@ function SelectionCheckbox({ id }: { id: string }) {
   )
 }
 
+function SelectAllCheckbox({ ids }: { ids: string[] }) {
+  const selectedIds = useSelectionStore((s) => s.selectedIds)
+  const setSelectedIds = useSelectionStore((s) => s.setSelectedIds)
+  const selectedIdSet = new Set(selectedIds)
+  const selectedCount = ids.filter((id) => selectedIdSet.has(id)).length
+  const allSelected = ids.length > 0 && selectedCount === ids.length
+  const someSelected = selectedCount > 0 && !allSelected
+
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <Checkbox
+        checked={allSelected}
+        indeterminate={someSelected}
+        onCheckedChange={(checked) => {
+          if (checked) {
+            setSelectedIds([...selectedIds, ...ids])
+          } else {
+            setSelectedIds(selectedIds.filter((id) => !ids.includes(id)))
+          }
+        }}
+        aria-label={allSelected ? "Deselect all items" : "Select all items"}
+      />
+    </div>
+  )
+}
+
 function InventoryRowActions({
   item,
   onDelete,
@@ -107,12 +133,13 @@ function InventoryRowActions({
 }
 
 export function getInventoryColumns(
-  onDelete: (item: InventoryItem) => void
+  onDelete: (item: InventoryItem) => void,
+  itemIds: string[]
 ): ColumnDef<InventoryItem>[] {
   return [
     {
       id: "select",
-      header: () => null,
+      header: () => <SelectAllCheckbox ids={itemIds} />,
       cell: ({ row }) => <SelectionCheckbox id={row.original.id} />,
       enableSorting: false,
       enableHiding: false,

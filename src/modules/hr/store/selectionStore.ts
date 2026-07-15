@@ -3,6 +3,7 @@ import { create } from 'zustand'
 interface SelectionState {
   selectedIds: string[]
   toggleId: (id: string) => void
+  setSelectedIds: (ids: string[]) => void
   clearSelection: () => void
 }
 
@@ -20,6 +21,9 @@ export const useSelectionStore =
               )
             : [...state.selectedIds, id],
       })),
+
+    setSelectedIds: (ids) =>
+      set({ selectedIds: [...new Set(ids)] }),
 
     clearSelection: () =>
       set({ selectedIds: [] }),

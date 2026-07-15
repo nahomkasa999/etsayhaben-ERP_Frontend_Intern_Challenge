@@ -1,52 +1,59 @@
-'use client'
+"use client"
 
-import { useSelectionStore } from '../store/selectionStore'
-import { deleteEmployee } from '../api/employeeApi'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Loader2, Trash2 } from "lucide-react"
+
+import { Button } from "@/shared/components/ui/button"
+
+import { deleteEmployee } from "../api/employeeApi"
+import { useSelectionStore } from "../store/selectionStore"
 
 export function EmployeeBulkActionBar() {
-  const selectedIds =
-    useSelectionStore((s) => s.selectedIds)
-
-  const clearSelection =
-    useSelectionStore((s) => s.clearSelection)
-
+  const selectedIds = useSelectionStore((s) => s.selectedIds)
+  const clearSelection = useSelectionStore((s) => s.clearSelection)
   const queryClient = useQueryClient()
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  if (selectedIds.length === 0)
-    return null
+  if (selectedIds.length === 0) return null
 
   async function handleBulkDelete() {
-    await Promise.all(
-      selectedIds.map((id) =>
-        deleteEmployee(id)
-      )
-    )
+    setIsDeleting(true)
 
-    clearSelection()
-
-    queryClient.invalidateQueries({
-      queryKey: ['employees'],
-    })
+    try {
+      await Promise.all(selectedIds.map((id) => deleteEmployee(id)))
+      clearSelection()
+      await queryClient.invalidateQueries({ queryKey: ["employees"] })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black text-white rounded-full px-6 py-3 flex items-center gap-4 shadow-lg">
-      <span>
-        {selectedIds.length} employee(s)
-        selected
+    <div
+      role="toolbar"
+      aria-label="Bulk employee actions"
+      className="fixed bottom-4 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-background/95 p-2 text-foreground shadow-lg backdrop-blur"
+    >
+      <span className="px-2 text-sm font-medium whitespace-nowrap">
+        {selectedIds.length}{" "}
+        {selectedIds.length === 1 ? "employee" : "employees"} selected
       </span>
-
-      <button
+      <Button
+        variant="destructive"
         onClick={handleBulkDelete}
-        className="text-red-300 font-bold"
+        disabled={isDeleting}
       >
-        Delete selected
-      </button>
-
-      <button onClick={clearSelection}>
+        {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+        {isDeleting ? "Deleting..." : "Delete selected"}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={clearSelection}
+        disabled={isDeleting}
+      >
         Cancel
-      </button>
+      </Button>
     </div>
   )
 }

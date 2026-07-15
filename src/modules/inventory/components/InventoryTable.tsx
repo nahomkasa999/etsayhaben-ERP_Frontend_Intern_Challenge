@@ -17,8 +17,12 @@ export function InventoryTable() {
     useInventory()
 
   const columns = useMemo(
-    () => getInventoryColumns((item) => removeItem(item.id)),
-    [removeItem]
+    () =>
+      getInventoryColumns(
+        (item) => removeItem(item.id),
+        items.map((item) => item.id)
+      ),
+    [items, removeItem]
   )
 
   if (isLoading) {

@@ -21,7 +21,10 @@ export function EmployeeTable() {
     setSearch,
   } = useEmployees()
 
-  const columns = useMemo(() => getEmployeeColumns(), [])
+  const columns = useMemo(
+    () => getEmployeeColumns(employees.map((employee) => employee.id)),
+    [employees]
+  )
 
   if (isLoading) {
     return (
