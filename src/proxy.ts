@@ -1,22 +1,63 @@
 import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
-import { auth } from "./lib/auth"; // Adjust path to wherever your Better Auth client instance is
+
+import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+
+import prisma from "@/lib/db";
+
+import { auth } from "./lib/auth";
+
+const relaxedPrefixes = ["/workspace", "/profile"];
+
+function isRelaxedRoute(pathname: string) {
+  return relaxedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 export async function proxy(request: NextRequest) {
-  // Better Auth provides helper logic to check sessions directly from requests
   const session = await auth.api.getSession({
     headers: request.headers,
   });
 
-  // If there is no active session, intercept and redirect
+  const pathname = request.nextUrl.pathname;
+
   if (!session) {
     return NextResponse.redirect(new URL("/signin", request.url));
+  }
+
+  if (isRelaxedRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  const activeOrganizationId = session.session.activeOrganizationId;
+
+  if (!activeOrganizationId) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
+  const activeCompanyId = request.cookies.get(ACTIVE_COMPANY_COOKIE)?.value;
+
+  if (!activeCompanyId) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
+  const company = await prisma.company.findFirst({
+    where: {
+      id: activeCompanyId,
+      organizationId: activeOrganizationId,
+    },
+    select: { id: true },
+  });
+
+  if (!company) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 
   return NextResponse.next();
 }
 
-// Map the routes pointing directly to your business modules
 export const config = {
   matcher: [
     "/dashboard/:path*",
@@ -24,5 +65,6 @@ export const config = {
     "/hr/:path*",
     "/inventory/:path*",
     "/profile/:path*",
+    "/workspace/:path*",
   ],
 };

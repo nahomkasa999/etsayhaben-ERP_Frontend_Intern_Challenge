@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
+import { useWorkspace } from "@/modules/workspace/hooks/useWorkspace";
 
 type Crumb = {
   label: string;
@@ -27,13 +28,18 @@ const sectionTitles: Record<string, string> = {
   hr: "HR",
   fiscalyear: "Fiscal Year",
   profile: "Profile",
+  workspace: "Workspaces",
 };
 
 const nestedLabels: Record<string, string> = {
   add: "Add",
 };
 
-function buildCrumbs(pathname: string, sectionHref: string): Crumb[] {
+function buildCrumbs(
+  pathname: string,
+  sectionHref: string,
+  organizationName?: string,
+): Crumb[] {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) {
     return [{ label: "EthioERP" }];
@@ -41,6 +47,13 @@ function buildCrumbs(pathname: string, sectionHref: string): Crumb[] {
 
   const section = segments[0];
   const sectionLabel = sectionTitles[section] ?? section;
+
+  if (section === "workspace" && segments.length >= 2) {
+    return [
+      { label: sectionLabel, href: "/workspace" },
+      { label: organizationName ?? "Organization" },
+    ];
+  }
 
   if (segments.length === 1) {
     return [{ label: sectionLabel }];
@@ -57,14 +70,22 @@ function buildCrumbs(pathname: string, sectionHref: string): Crumb[] {
 export function SiteHeader() {
   const pathname = usePathname();
   const { tenantId, companyId } = useTenantStore();
+  const { getWorkspaceById } = useWorkspace();
 
-  const section = pathname.split("/").filter(Boolean)[0] ?? "";
+  const segments = pathname.split("/").filter(Boolean);
+  const section = segments[0] ?? "";
+  const organizationId =
+    section === "workspace" && segments.length >= 2 ? segments[1] : undefined;
+  const organizationName = organizationId
+    ? getWorkspaceById(organizationId)?.name
+    : undefined;
+
   const sectionHref =
     section === "fiscalyear" && tenantId && companyId
       ? `/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`
       : `/${section}`;
 
-  const crumbs = buildCrumbs(pathname, sectionHref);
+  const crumbs = buildCrumbs(pathname, sectionHref, organizationName);
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">

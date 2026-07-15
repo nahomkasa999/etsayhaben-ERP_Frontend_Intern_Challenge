@@ -1,143 +1,76 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
-import { CreateCompanyForm } from "@/modules/company/components/CreateCompanyForm";
-import { useCompany } from "@/modules/company/hooks/useCompany";
-import { CreateWorkspaceForm } from "@/modules/workspace/components/CreateWorkspaceForm";
+import { useState } from "react";
+import { Building2Icon } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { CreateOrganizationDialog } from "@/modules/workspace/components/CreateOrganizationDialog";
+import { OrganizationCard } from "@/modules/workspace/components/OrganizationCard";
 import { useWorkspace } from "@/modules/workspace/hooks/useWorkspace";
 
 export default function WorkspacePage() {
+  const [createOpen, setCreateOpen] = useState(false);
   const {
     workspaces,
-    activeWorkspace,
+    activeOrganizationId,
+    isLoading,
     setActiveWorkspace,
-    isLoading: isLoadingWorkspaces,
   } = useWorkspace();
-  const {
-    companies,
-    activeCompany,
-    setActiveCompanyId,
-    isLoading: isLoadingCompanies,
-  } = useCompany();
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Workspaces</h2>
-        <p className="text-muted-foreground">
-          Create organizations (tenants) and manage companies inside them.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
+          <p className="text-muted-foreground">
+            Choose an organization to view and manage its companies.
+          </p>
+        </div>
+        <Button type="button" onClick={() => setCreateOpen(true)}>
+          + Create organization
+        </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-36 animate-pulse rounded-xl bg-muted"
+            />
+          ))}
+        </div>
+      ) : workspaces.length === 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Create workspace</CardTitle>
-            <CardDescription>
-              A workspace is your tenant. You can belong to multiple workspaces.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateWorkspaceForm />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Create company</CardTitle>
-            <CardDescription>
-              Companies belong to the active workspace and scope ERP data such as
-              fiscal years.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {activeWorkspace ? (
-              <CreateCompanyForm />
-            ) : (
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <Building2Icon className="size-10 text-muted-foreground" />
+            <div>
+              <p className="font-medium">No organizations yet</p>
               <p className="text-sm text-muted-foreground">
-                Select or create a workspace first.
+                Create your first organization to get started.
               </p>
-            )}
+            </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Active workspace</CardTitle>
-            <CardDescription>
-              Tenant ID: {activeWorkspace?.id ?? "Not selected"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Select
-              value={activeWorkspace?.id ?? ""}
-              onValueChange={(value) => {
-                if (value) {
-                  void setActiveWorkspace(value);
-                }
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {workspaces.map((workspace) => (
+            <OrganizationCard
+              key={workspace.id}
+              workspace={workspace}
+              isActive={workspace.id === activeOrganizationId}
+              onSelect={(organizationId) => {
+                void setActiveWorkspace(organizationId);
               }}
-              disabled={isLoadingWorkspaces || workspaces.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select workspace" />
-              </SelectTrigger>
-              <SelectContent>
-                {workspaces.map((workspace) => (
-                  <SelectItem key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+            />
+          ))}
+        </div>
+      )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Active company</CardTitle>
-            <CardDescription>
-              Company ID: {activeCompany?.id ?? "Not selected"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Select
-              value={activeCompany?.id ?? ""}
-              onValueChange={(value) => {
-                if (value) {
-                  setActiveCompanyId(value);
-                }
-              }}
-              disabled={isLoadingCompanies || companies.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select company" />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
+      <CreateOrganizationDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
     </div>
   );
 }

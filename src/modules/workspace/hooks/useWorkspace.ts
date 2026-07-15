@@ -1,168 +1,176 @@
 "use client";
 
-import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
-import { slugify } from "@/shared/lib/slug";
-import type { CreateWorkspaceInput, Workspace } from "../types";
+import { createFetch, createSchema } from "@better-fetch/fetch";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  CreateWorkspaceSchema,
+  OrganizationsListResponseSchema,
+  SetActiveWorkspaceResponseSchema,
+  SetActiveWorkspaceSchema,
+  WorkspaceSchema,
+  type CreateWorkspaceInput,
+  type Workspace,
+} from "../types";
 
-function toWorkspace(organization: {
-  id: string;
-  name: string;
-  slug: string;
-  logo?: string | null;
-  createdAt: Date | string;
-  metadata?: string | Record<string, unknown> | null;
-}): Workspace {
-  let metadata: Record<string, unknown> | null = null;
-
-  if (typeof organization.metadata === "string" && organization.metadata) {
-    try {
-      metadata = JSON.parse(organization.metadata) as Record<string, unknown>;
-    } catch {
-      metadata = null;
-    }
-  } else if (
-    organization.metadata &&
-    typeof organization.metadata === "object"
-  ) {
-    metadata = organization.metadata;
-  }
-
-  return {
-    id: organization.id,
-    name: organization.name,
-    slug: organization.slug,
-    logo: organization.logo ?? null,
-    createdAt:
-      typeof organization.createdAt === "string"
-        ? organization.createdAt
-        : organization.createdAt.toISOString(),
-    metadata,
-  };
-}
-
-async function ensureUniqueWorkspaceSlug(baseSlug: string) {
-  let slug = baseSlug || "workspace";
-  let suffix = 0;
-
-  while (true) {
-    const candidate = suffix === 0 ? slug : `${slug}-${suffix}`;
-    const { data, error } = await authClient.organization.checkSlug({
-      slug: candidate,
-    });
-
-    if (!error && data?.status === true) {
-      return candidate;
-    }
-
-    if (error) {
-      suffix += 1;
-      continue;
-    }
-
-    throw new Error("Failed to validate workspace slug");
-  }
-}
+const workspaceFetch = createFetch({
+  baseURL: "/api/v1",
+  credentials: "include",
+  schema: createSchema(
+    {
+      "/organizations": {
+        output: OrganizationsListResponseSchema,
+      },
+      "@post/organizations": {
+        input: CreateWorkspaceSchema,
+        output: WorkspaceSchema,
+      },
+      "@post/organizations/set-active": {
+        input: SetActiveWorkspaceSchema,
+        output: SetActiveWorkspaceResponseSchema,
+      },
+    },
+    { strict: true },
+  ),
+});
 
 export function useWorkspace() {
-  const {
-    data: organizations,
-    isPending: isLoadingWorkspaces,
-    refetch: refetchWorkspaces,
-  } = authClient.useListOrganizations();
-  const {
-    data: activeOrganization,
-    isPending: isLoadingActiveWorkspace,
-    refetch: refetchActiveWorkspace,
-  } = authClient.useActiveOrganization();
-  const [isMutating, setIsMutating] = useState(false);
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
-  const workspaces = (organizations ?? []).map(toWorkspace);
-  const activeWorkspace = activeOrganization
-    ? toWorkspace(activeOrganization)
-    : null;
+  function getErrorMessage(fetchError: unknown, fallback: string) {
+    if (
+      fetchError &&
+      typeof fetchError === "object" &&
+      "message" in fetchError &&
+      typeof fetchError.message === "string" &&
+      fetchError.message.length > 0
+    ) {
+      return fetchError.message;
+    }
+
+    return fallback;
+  }
+
+  async function fetchOrganizations() {
+    const { data, error: fetchError } = await workspaceFetch("/organizations");
+
+    if (fetchError) {
+      throw new Error(getErrorMessage(fetchError, "Failed to fetch organizations"));
+    }
+
+    return data;
+  }
+
+  async function createOrganizationRequest(input: CreateWorkspaceInput): Promise<Workspace> {
+    const { data, error: fetchError } = await workspaceFetch("@post/organizations", {
+      body: input,
+    });
+
+    if (fetchError) {
+      throw new Error(getErrorMessage(fetchError, "Failed to create organization"));
+    }
+
+    return data;
+  }
+
+  async function setActiveOrganizationRequest(organizationId: string) {
+    const { data, error: fetchError } = await workspaceFetch(
+      "@post/organizations/set-active",
+      { body: { organizationId } },
+    );
+
+    if (fetchError) {
+      throw new Error(
+        getErrorMessage(fetchError, "Failed to set active organization"),
+      );
+    }
+
+    return data;
+  }
+
+  const organizationsQuery = useQuery({
+    queryKey: ["organizations"],
+    queryFn: fetchOrganizations,
+  });
+
+  const workspaces = useMemo(
+    () => organizationsQuery.data?.organizations ?? [],
+    [organizationsQuery.data?.organizations],
+  );
+  const activeOrganizationId =
+    organizationsQuery.data?.activeOrganizationId ?? null;
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === activeOrganizationId) ?? null;
+
+  const totalCompanies = useMemo(
+    () => workspaces.reduce((sum, workspace) => sum + workspace.companyCount, 0),
+    [workspaces],
+  );
+
+  const createMutation = useMutation({
+    mutationFn: createOrganizationRequest,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      await queryClient.invalidateQueries({ queryKey: ["companies"] });
+    },
+  });
+
+  const setActiveMutation = useMutation({
+    mutationFn: setActiveOrganizationRequest,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      await queryClient.invalidateQueries({ queryKey: ["companies"] });
+    },
+  });
+
+  function getWorkspaceById(organizationId: string) {
+    return workspaces.find((workspace) => workspace.id === organizationId) ?? null;
+  }
 
   async function createWorkspace(input: CreateWorkspaceInput) {
-    setIsMutating(true);
     setError(null);
 
     try {
-      const name = input.name.trim();
-
-      if (!name) {
-        throw new Error("Workspace name is required");
-      }
-
-      const baseSlug = slugify(input.slug?.trim() || name);
-      const slug = await ensureUniqueWorkspaceSlug(baseSlug);
-
-      const { data, error: createError } =
-        await authClient.organization.create({
-          name,
-          slug,
-          logo: input.logo ?? null,
-        });
-
-      if (createError) {
-        throw new Error(createError.message ?? "Failed to create workspace");
-      }
-
-      if (!data) {
-        throw new Error("Failed to create workspace");
-      }
-
-      await refetchWorkspaces();
-      await refetchActiveWorkspace();
-
-      return toWorkspace(data);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to create workspace";
-      setError(message);
-      throw err;
-    } finally {
-      setIsMutating(false);
+      return await createMutation.mutateAsync(input);
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Failed to create workspace",
+      );
+      throw actionError;
     }
   }
 
   async function setActiveWorkspace(organizationId: string) {
-    setIsMutating(true);
     setError(null);
 
     try {
-      const { error: setActiveError } =
-        await authClient.organization.setActive({
-          organizationId,
-        });
-
-      if (setActiveError) {
-        throw new Error(
-          setActiveError.message ?? "Failed to set active workspace",
-        );
-      }
-
-      await refetchActiveWorkspace();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to set active workspace";
-      setError(message);
-      throw err;
-    } finally {
-      setIsMutating(false);
+      await setActiveMutation.mutateAsync(organizationId);
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Failed to set active workspace",
+      );
+      throw actionError;
     }
   }
 
   return {
     workspaces,
     activeWorkspace,
-    isLoading: isLoadingWorkspaces || isLoadingActiveWorkspace,
-    isMutating,
+    activeOrganizationId,
+    totalOrganizations: workspaces.length,
+    totalCompanies,
+    isLoading: organizationsQuery.isLoading,
+    isMutating: createMutation.isPending || setActiveMutation.isPending,
     error,
     setError,
     createWorkspace,
     setActiveWorkspace,
-    refetchWorkspaces,
-    refetchActiveWorkspace,
+    getWorkspaceById,
+    refetchWorkspaces: organizationsQuery.refetch,
   };
 }

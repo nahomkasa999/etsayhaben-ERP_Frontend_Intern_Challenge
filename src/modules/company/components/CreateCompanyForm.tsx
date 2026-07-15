@@ -6,7 +6,15 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useCompany } from "../hooks/useCompany";
 
-export function CreateCompanyForm() {
+type CreateCompanyFormProps = {
+  onSuccess?: () => void;
+  submitLabel?: string;
+};
+
+export function CreateCompanyForm({
+  onSuccess,
+  submitLabel = "Create company",
+}: CreateCompanyFormProps) {
   const { createCompany, isMutating, error } = useCompany();
   const [name, setName] = useState("");
 
@@ -14,6 +22,7 @@ export function CreateCompanyForm() {
     event.preventDefault();
     await createCompany({ name });
     setName("");
+    onSuccess?.();
   }
 
   return (
@@ -30,7 +39,7 @@ export function CreateCompanyForm() {
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <Button type="submit" disabled={isMutating || !name.trim()}>
-        {isMutating ? "Creating..." : "Create company"}
+        {isMutating ? "Creating..." : submitLabel}
       </Button>
     </form>
   );

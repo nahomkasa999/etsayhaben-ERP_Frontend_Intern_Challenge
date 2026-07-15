@@ -17,7 +17,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { CircleUserRoundIcon, LayoutDashboardIcon, LogOutIcon } from "lucide-react";
+import { CircleUserRoundIcon, Building2Icon, LayoutDashboardIcon, LogOutIcon } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -86,6 +86,10 @@ export function AuthNavActions() {
             <DropdownMenuItem render={<Link href="/profile" />}>
               <CircleUserRoundIcon />
               Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/workspace" />}>
+              <Building2Icon />
+              Workspaces
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/dashboard" />}>
               <LayoutDashboardIcon />

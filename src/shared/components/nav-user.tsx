@@ -24,6 +24,7 @@ import {
 import {
   EllipsisVerticalIcon,
   CircleUserRoundIcon,
+  Building2Icon,
   LogOutIcon,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -102,6 +103,10 @@ export function NavUser() {
               <DropdownMenuItem render={<Link href="/profile" />}>
                 <CircleUserRoundIcon />
                 Account
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/workspace" />}>
+                <Building2Icon />
+                Workspaces
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
