@@ -5,9 +5,10 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useWorkspace } from "../hooks/useWorkspace";
+import type { Workspace } from "../types";
 
 type CreateWorkspaceFormProps = {
-  onSuccess?: () => void;
+  onSuccess?: (workspace: Workspace) => void;
   submitLabel?: string;
 };
 
@@ -20,9 +21,9 @@ export function CreateWorkspaceForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await createWorkspace({ name });
+    const workspace = await createWorkspace({ name });
     setName("");
-    onSuccess?.();
+    onSuccess?.(workspace);
   }
 
   return (

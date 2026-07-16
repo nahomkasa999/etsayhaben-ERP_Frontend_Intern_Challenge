@@ -34,13 +34,13 @@ export async function proxy(request: NextRequest) {
   const activeOrganizationId = session.session.activeOrganizationId;
 
   if (!activeOrganizationId) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(new URL("/workspace", request.url));
   }
 
   const activeCompanyId = request.cookies.get(ACTIVE_COMPANY_COOKIE)?.value;
 
   if (!activeCompanyId) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(new URL("/workspace", request.url));
   }
 
   const company = await prisma.company.findFirst({
@@ -52,7 +52,7 @@ export async function proxy(request: NextRequest) {
   });
 
   if (!company) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(new URL("/workspace", request.url));
   }
 
   return NextResponse.next();
@@ -65,6 +65,7 @@ export const config = {
     "/hr/:path*",
     "/inventory/:path*",
     "/profile/:path*",
+    "/workspace",
     "/workspace/:path*",
   ],
 };

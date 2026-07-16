@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Building2Icon } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { CreateOrganizationDialog } from "@/modules/workspace/components/CreateOrganizationDialog";
+import { CreateWorkspaceForm } from "@/modules/workspace/components/CreateWorkspaceForm";
 import { OrganizationCard } from "@/modules/workspace/components/OrganizationCard";
 import { useWorkspace } from "@/modules/workspace/hooks/useWorkspace";
 
 export default function WorkspacePage() {
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const {
     workspaces,
@@ -16,18 +25,31 @@ export default function WorkspacePage() {
     setActiveWorkspace,
   } = useWorkspace();
 
+  useEffect(() => {
+    if (isLoading || workspaces.length !== 1) {
+      return;
+    }
+
+    const onlyWorkspace = workspaces[0];
+    if (onlyWorkspace.companyCount === 0) {
+      router.replace(`/workspace/${onlyWorkspace.id}`);
+    }
+  }, [isLoading, router, workspaces]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
           <p className="text-muted-foreground">
-            Choose an organization to view and manage its companies.
+            Create an organization, then add a company to start using the ERP.
           </p>
         </div>
-        <Button type="button" onClick={() => setCreateOpen(true)}>
-          + Create organization
-        </Button>
+        {workspaces.length > 0 ? (
+          <Button type="button" onClick={() => setCreateOpen(true)}>
+            + Create organization
+          </Button>
+        ) : null}
       </div>
 
       {isLoading ? (
@@ -41,14 +63,19 @@ export default function WorkspacePage() {
         </div>
       ) : workspaces.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <Building2Icon className="size-10 text-muted-foreground" />
-            <div>
-              <p className="font-medium">No organizations yet</p>
-              <p className="text-sm text-muted-foreground">
-                Create your first organization to get started.
-              </p>
-            </div>
+          <CardHeader>
+            <CardTitle>Create your first organization</CardTitle>
+            <CardDescription>
+              Organizations group your companies. You will add a company in the
+              next step.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CreateWorkspaceForm
+              onSuccess={(workspace) => {
+                router.push(`/workspace/${workspace.id}`);
+              }}
+            />
           </CardContent>
         </Card>
       ) : (

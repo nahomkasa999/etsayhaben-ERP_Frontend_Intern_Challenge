@@ -55,7 +55,7 @@ export function useAuth() {
         setUser(toAuthUser(data.user));
       }
 
-      router.push("/onboarding");
+      router.push("/dashboard");
       router.refresh();
       return true;
     } catch (err) {
@@ -85,7 +85,7 @@ export function useAuth() {
         setUser(toAuthUser(data.user));
       }
 
-      router.push("/onboarding");
+      router.push("/dashboard");
       router.refresh();
       return true;
     } catch (err) {

@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeftIcon, Building2Icon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { CreateCompanyDialog } from "@/modules/company/components/CreateCompanyDialog";
+import { CreateCompanyForm } from "@/modules/company/components/CreateCompanyForm";
 import { useCompany } from "@/modules/company/hooks/useCompany";
 import { CompanyCard } from "@/modules/workspace/components/CompanyCard";
 import { useWorkspace } from "@/modules/workspace/hooks/useWorkspace";
@@ -93,13 +100,15 @@ export default function OrganizationDetailPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{workspace.name}</h2>
           <p className="text-muted-foreground">
-            Manage companies inside this organization.
+            Create or choose a company to open the dashboard.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">{companyLabel}</p>
         </div>
-        <Button type="button" onClick={() => setCreateOpen(true)}>
-          + Create company
-        </Button>
+        {organizationCompanies.length > 0 ? (
+          <Button type="button" onClick={() => setCreateOpen(true)}>
+            + Create company
+          </Button>
+        ) : null}
       </div>
 
       {isLoadingCompanies ? (
@@ -113,14 +122,19 @@ export default function OrganizationDetailPage() {
         </div>
       ) : organizationCompanies.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <Building2Icon className="size-10 text-muted-foreground" />
-            <div>
-              <p className="font-medium">No companies yet</p>
-              <p className="text-sm text-muted-foreground">
-                Create a company to start using this organization.
-              </p>
-            </div>
+          <CardHeader>
+            <CardTitle>Create your first company</CardTitle>
+            <CardDescription>
+              Companies scope ERP data inside this organization.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CreateCompanyForm
+              onSuccess={() => {
+                router.push("/dashboard");
+                router.refresh();
+              }}
+            />
           </CardContent>
         </Card>
       ) : (

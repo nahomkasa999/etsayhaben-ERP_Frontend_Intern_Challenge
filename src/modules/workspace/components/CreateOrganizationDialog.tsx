@@ -28,7 +28,7 @@ export function CreateOrganizationDialog({
             multiple companies.
           </DialogDescription>
         </DialogHeader>
-        <CreateWorkspaceForm onSuccess={() => onOpenChange(false)} />
+        <CreateWorkspaceForm onSuccess={() => { onOpenChange(false); }} />
       </DialogContent>
     </Dialog>
   );
