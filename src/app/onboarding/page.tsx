@@ -32,15 +32,15 @@ type OnboardingStep =
 
 function getOnboardingStep(input: {
   organizationsCount: number;
-  hasActiveOrganization: boolean;
+  hasSelectedOrganization: boolean;
   companiesCount: number;
-  hasActiveCompany: boolean;
+  hasSelectedCompany: boolean;
 }): OnboardingStep {
   if (input.organizationsCount === 0) {
     return "create-organization";
   }
 
-  if (!input.hasActiveOrganization) {
+  if (!input.hasSelectedOrganization) {
     return "select-organization";
   }
 
@@ -48,7 +48,7 @@ function getOnboardingStep(input: {
     return "create-company";
   }
 
-  if (!input.hasActiveCompany) {
+  if (!input.hasSelectedCompany) {
     return "select-company";
   }
 
@@ -90,9 +90,9 @@ export default function OnboardingPage() {
 
   const step = getOnboardingStep({
     organizationsCount: workspaces.length,
-    hasActiveOrganization: Boolean(activeWorkspace?.id),
+    hasSelectedOrganization: Boolean(activeWorkspace?.id),
     companiesCount: companies.length,
-    hasActiveCompany: Boolean(activeCompany?.id),
+    hasSelectedCompany: Boolean(activeCompany?.id),
   });
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
       await setActiveWorkspace(organizationSelection);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to set active organization",
+        err instanceof Error ? err.message : "Failed to select organization",
       );
     }
   }
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
             <CardHeader>
               <CardTitle>Select organization</CardTitle>
               <CardDescription>
-                Choose which organization should be active for this session.
+                Choose which organization to use for this session.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -222,7 +222,7 @@ export default function OnboardingPage() {
             <CardHeader>
               <CardTitle>Create company</CardTitle>
               <CardDescription>
-                Companies belong to your active organization and scope ERP data.
+                Companies belong to your organization and scope ERP data.
               </CardDescription>
             </CardHeader>
             <CardContent>

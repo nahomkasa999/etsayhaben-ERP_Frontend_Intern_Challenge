@@ -129,7 +129,6 @@ export default function OrganizationDetailPage() {
             <CompanyCard
               key={company.id}
               company={company}
-              isActive={company.id === activeCompanyId}
               isSelecting={isSelectingCompany}
               onSelect={async (companyId) => {
                 if (companyId !== activeCompanyId) {

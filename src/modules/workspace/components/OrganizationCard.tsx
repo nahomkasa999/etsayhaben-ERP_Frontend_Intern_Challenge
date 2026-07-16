@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Building2Icon } from "lucide-react";
-import { Badge } from "@/shared/components/ui/badge";
 import {
   Card,
   CardDescription,
@@ -10,12 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { cn } from "@/lib/utils";
 import type { WorkspaceWithCompanies } from "../types";
 
 type OrganizationCardProps = {
   workspace: WorkspaceWithCompanies;
-  isActive: boolean;
   onSelect: (organizationId: string) => void;
 };
 
@@ -31,7 +28,6 @@ function getInitials(name: string) {
 
 export function OrganizationCard({
   workspace,
-  isActive,
   onSelect,
 }: OrganizationCardProps) {
   const companyLabel =
@@ -43,21 +39,8 @@ export function OrganizationCard({
       onClick={() => onSelect(workspace.id)}
       className="block h-full"
     >
-      <Card
-        className={cn(
-          "relative h-full transition-colors hover:bg-muted/40",
-          isActive && "ring-2 ring-primary/40",
-        )}
-      >
-        {isActive ? (
-          <Badge
-            variant="secondary"
-            className="absolute top-3 right-3 z-10"
-          >
-            Active
-          </Badge>
-        ) : null}
-        <CardHeader className="flex-row items-start gap-3 pr-16">
+      <Card className="relative h-full transition-colors hover:bg-muted/40">
+        <CardHeader className="flex-row items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             {workspace.logo ? (
               // eslint-disable-next-line @next/next/no-img-element

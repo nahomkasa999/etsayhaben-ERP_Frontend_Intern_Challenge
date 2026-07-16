@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/shared/components/ui/badge";
 import {
   Card,
   CardDescription,
@@ -12,14 +11,12 @@ import type { Company } from "@/modules/company/types";
 
 type CompanyCardProps = {
   company: Company;
-  isActive: boolean;
   isSelecting: boolean;
   onSelect: (companyId: string) => void | Promise<void>;
 };
 
 export function CompanyCard({
   company,
-  isActive,
   isSelecting,
   onSelect,
 }: CompanyCardProps) {
@@ -30,7 +27,6 @@ export function CompanyCard({
       aria-disabled={isSelecting}
       className={cn(
         "relative h-full cursor-pointer transition-colors hover:bg-muted/40",
-        isActive && "ring-2 ring-primary/40",
         isSelecting && "pointer-events-none opacity-70",
       )}
       onClick={() => {
@@ -49,12 +45,7 @@ export function CompanyCard({
         }
       }}
     >
-      {isActive ? (
-        <Badge variant="secondary" className="absolute top-3 right-3 z-10">
-          Active
-        </Badge>
-      ) : null}
-      <CardHeader className="pr-16">
+      <CardHeader>
         <CardTitle>{company.name}</CardTitle>
         <CardDescription>@{company.slug}</CardDescription>
       </CardHeader>

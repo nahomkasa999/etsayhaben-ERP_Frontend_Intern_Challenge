@@ -12,7 +12,6 @@ export default function WorkspacePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const {
     workspaces,
-    activeOrganizationId,
     isLoading,
     setActiveWorkspace,
   } = useWorkspace();
@@ -58,7 +57,6 @@ export default function WorkspacePage() {
             <OrganizationCard
               key={workspace.id}
               workspace={workspace}
-              isActive={workspace.id === activeOrganizationId}
               onSelect={(organizationId) => {
                 void setActiveWorkspace(organizationId);
               }}
