@@ -1,34 +1,43 @@
 # EthioERP
 
+> [**Live Demo**](https://ethio-erp.vercel.app/) — Try it instantly.
+
 Multi-tenant ERP built with **Next.js 16**, **Hono**, **Better Auth**, **Prisma**, **TanStack Query**, and **Zustand**.
 
 Supports Ethiopian and Gregorian calendar fiscal years, inventory management, and employee (HR) management.
 
-## Modules
-
-| Module | Description |
-|--------|-------------|
-| Auth | Sign in / sign up via Better Auth, email/password + organizations |
-| Workspace | Organization and company onboarding flow |
-| Company | Company CRUD scoped to organizations |
-| Fiscal Year | CRUD with activate/close/reopen, dual-calendar support |
-| Inventory | CRUD with categories, SKUs, low-stock alerts |
-| HR / Employees | CRUD with departments, status, bulk actions |
-
 ## Quick Start
 
 ```bash
-# Install
+# 1. Install dependencies
 npm install
 
-# Run database migrations
+# 2. Spin up a database (choose one)
+
+# Option A — Local Prisma Postgres (easiest)
+npx prisma dev --port 51213
+
+# Option B — Cloud PostgreSQL (free, no install)
+npx create-db --interactive
+
+# 3. Copy the connection URL from step 2 into .env as DATABASE_URL
+#    (see .env.example for the full list of variables)
+
+# 4. Run migrations
 npx prisma migrate dev
 
-# Start dev server
+# 5. Start dev server
 npm run dev
 ```
 
-See `ARCHITECTURE.md` for full setup, architecture guide, and module conventions.
+Open [http://localhost:3000](http://localhost:3000). You'll be redirected to `/signin`.
+
+## First-Time Flow
+
+1. **Sign up** at `/signup`
+2. **Create an organization** (you're redirected to onboarding)
+3. **Create a company** within that organization
+4. You land on the **dashboard**
 
 ## Development
 

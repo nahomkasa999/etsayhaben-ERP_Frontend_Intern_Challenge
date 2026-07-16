@@ -1,4 +1,4 @@
-# EthioERP — Architecture & Handoff Guide
+# EthioERP — Architecture Guide
 
 > **Stack:** Next.js 16.2.9 · React 19.2.4 · Better Auth 1.6.23 · Hono 4.12.30 · Prisma 7.8.0 · TanStack Query 5 · TanStack Table 8 · Zustand 5 · TailwindCSS 4 · shadcn/ui · Zod 4.4.3 · Recharts · DnD Kit
 
@@ -7,215 +7,96 @@
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
-2. [Getting Started](#2-getting-started)
-3. [Architecture Overview](#3-architecture-overview)
-4. [Directory Structure](#4-directory-structure)
-5. [Multi-Tenancy Model](#5-multi-tenancy-model)
-6. [Authentication (Better Auth)](#6-authentication-better-auth)
-7. [API Layer (Hono)](#7-api-layer-hono)
-8. [Frontend Module Architecture](#8-frontend-module-architecture)
-9. [Database Schema (Prisma)](#9-database-schema-prisma)
-10. [State Management](#10-state-management)
-11. [Middleware / Proxy](#11-middleware--proxy)
-12. [Routing & Layouts](#12-routing--layouts)
-13. [UI Component System](#13-ui-component-system)
-14. [API Documentation](#14-api-documentation)
-15. [Environment Variables](#15-environment-variables)
-16. [Common Patterns](#16-common-patterns)
-17. [FAQ / Troubleshooting](#17-faq--troubleshooting)
+2. [Architecture Overview](#2-architecture-overview)
+3. [Directory Structure](#3-directory-structure)
+4. [Multi-Tenancy Model](#4-multi-tenancy-model)
+5. [Authentication (Better Auth)](#5-authentication-better-auth)
+6. [API Layer (Hono)](#6-api-layer-hono)
+7. [Frontend Module Architecture](#7-frontend-module-architecture)
+8. [Database Schema (Prisma)](#8-database-schema-prisma)
+9. [State Management](#9-state-management)
+10. [Middleware / Proxy](#10-middleware--proxy)
+11. [Routing & Layouts](#11-routing--layouts)
+12. [UI Component System](#12-ui-component-system)
+13. [API Documentation](#13-api-documentation)
+14. [Environment Variables](#14-environment-variables)
+15. [Common Patterns](#15-common-patterns)
 
 ---
 
 ## 1. Project Overview
 
-EthioERP is a multi-tenant ERP frontend built with Next.js. It supports Ethiopian and Gregorian calendar fiscal years, inventory management, and employee (HR) management. Each user belongs to an **Organization** (Better Auth tenant) and further to a **Company** within that organization, which scopes all ERP data.
+EthioERP is a multi-tenant ERP built with Next.js. It supports Ethiopian and Gregorian calendar fiscal years, inventory management, and employee (HR) management. Each user belongs to an **Organization** (Better Auth tenant) and further to a **Company** within that organization, which scopes all ERP data.
 
 ### Current Modules
 
 | Module | Status | Description |
 |--------|--------|-------------|
-| Auth (sign in / sign up) | Complete | Better Auth with email/password + organizations |
+| Auth | Complete | Better Auth with email/password + organizations |
+| Workspace | Complete | Organization management via Better Auth org plugin |
 | Company | Complete | Company CRUD within organizations |
-| Workspace | Complete | Organization management (via Better Auth) |
-| Fiscal Year | Complete | CRUD + activate/close/reopen, Ethiopian & Gregorian |
-| Inventory | Complete | CRUD with categories, SKUs, low-stock alerts |
-| HR / Employees | Complete | CRUD with departments, status, bulk actions |
+| Fiscal Year | Complete | CRUD + activate/close/reopen, Ethiopian & Gregorian calendars |
+| Inventory | Complete | CRUD with categories, SKUs, low-stock alerts, bulk actions |
+| HR / Employees | Complete | CRUD with departments, status, search, bulk actions |
 
 ---
 
-## 2. Getting Started
-
-### Prerequisites
-
-- Node.js >= 20
-- PostgreSQL >= 14
-- npm
-
-### 2.1 Database Setup (Local PostgreSQL)
-
-#### Option A — Using Prisma Postgres (easiest)
-
-Run a local Prisma Postgres instance via the Prisma CLI:
-
-```bash
-npx prisma dev --port 51213
-```
-
-This starts a local PostgreSQL server on port 51213 with Prisma's connection pooling. The `prisma dev` command automatically provisions two databases (main + shadow) and prints the connection URL. Use that URL in your `.env`.
-
-#### Option B — Standalone PostgreSQL
-
-If you have PostgreSQL installed locally (or via Docker):
-
-```bash
-# Create the database
-createdb ethioerp
-
-# Create a shadow database for migrations
-createdb ethioerp_shadow
-```
-
-Then update your `.env` accordingly.
-
-#### Option C — Docker PostgreSQL (recommended for consistency)
-
-Create a `docker-compose.yml` at the project root:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    ports:
-      - "51214:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: template1
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  postgres-shadow:
-    image: postgres:16-alpine
-    ports:
-      - "51215:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: template1
-    volumes:
-      - pgdata-shadow:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
-  pgdata-shadow:
-```
-
-```bash
-docker compose up -d
-```
-
-### 2.2 Environment Configuration
-
-Create `.env` in the project root:
-
-```env
-# ── Database ──────────────────────────────────────────
-# Main database connection (Prisma adapter)
-DATABASE_URL="postgres://postgres:postgres@localhost:51214/template1?sslmode=disable&connection_limit=10&connect_timeout=0&max_idle_connection_lifetime=0&pool_timeout=0&socket_timeout=0"
-
-# Shadow database (used by Prisma Migrate for detecting schema drift)
-SHADOW_DATABASE_URL="postgres://postgres:postgres@localhost:51215/template1?sslmode=disable&connection_limit=10&connect_timeout=0&max_idle_connection_lifetime=0&pool_timeout=0&socket_timeout=0"
-
-# ── Better Auth ───────────────────────────────────────
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=<generate-your-own-secret>
-```
-
-> **Generate a secret:** Run `openssl rand -hex 32` or use any 32+ character random string.
-
-> **Never commit `.env` to git.** It is already in `.gitignore`.
-
-### 2.3 Run Migrations
-
-```bash
-npx prisma migrate dev
-```
-
-This applies all existing migrations in `prisma/migrations/` and regenerates the Prisma client in `src/generated/prisma/`.
-
-### 2.4 Install & Run
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). You will be redirected to `/signin`.
-
-### 2.5 First-Time User Flow
-
-1. **Sign up** at `/signup` (creates a Better Auth user)
-2. **Create an organization** on the onboarding page (a tenant in Better Auth)
-3. **Create a company** within that organization (scopes ERP data)
-4. You are redirected to the **dashboard**
-
----
-
-## 3. Architecture Overview
+## 2. Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Next.js 16 App Router                    │
-│                                                                  │
-│  ┌──────────────┐    ┌────────────────┐    ┌──────────────────┐  │
-│  │  Pages/Layout │    │  Middleware     │    │  API (Hono)      │  │
-│  │  (src/app/)   │◄──►│  (src/proxy.ts) │    │  (src/app/api/)  │  │
-│  └──────┬───────┘    └────────────────┘    └────────┬─────────┘  │
-│         │                                            │           │
-│  ┌──────▼───────────────────────────────────────────▼───────┐   │
-│  │                    Modules (src/modules/)                  │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐ │   │
-│  │  │  Auth    │ │Workspace │ │Inventory │ │   HR / FY    │ │   │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘ │   │
-│  └───────────────────────────────────────────────────────────┘   │
-│                          │                                       │
-│  ┌───────────────────────▼───────────────────────────────────┐  │
-│  │              Shared Components (src/shared/)               │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌───────────────────────────┐  │  │
-│  │  │  UI (28) │ │  Layout  │ │  lib (cn, openapi, slug)  │  │  │
-│  │  └──────────┘ └──────────┘ └───────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                          │                                       │
-│  ┌───────────────────────▼───────────────────────────────────┐  │
-│  │  Prisma ORM → PostgreSQL                                   │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                       Next.js 16 App Router                          │
+│                                                                      │
+│  ┌──────────────┐    ┌──────────────────┐    ┌────────────────────┐  │
+│  │  Pages/Layout │    │  Middleware       │    │  API (Hono)        │  │
+│  │  (src/app/)   │◄──►│  (src/proxy.ts)   │    │  (src/app/api/)    │  │
+│  └──────┬───────┘    └──────────────────┘    └────────┬───────────┘  │
+│         │                                              │             │
+│  ┌──────▼─────────────────────────────────────────────▼─────────┐   │
+│  │                   Modules (src/modules/)                       │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │   │
+│  │  │  Auth    │ │Workspace │ │Inventory │ │  HR / FY / Co.   │  │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │   │
+│  └────────────────────────────────────────────────────────────────┘   │
+│                          │                                             │
+│  ┌───────────────────────▼─────────────────────────────────────────┐  │
+│  │              Shared Components (src/shared/)                      │  │
+│  │  ┌────────────┐ ┌──────────────┐ ┌───────────────────────────┐  │  │
+│  │  │  UI (26+)  │ │  Layout      │ │  lib (cn, openapi, slug)  │  │  │
+│  │  └────────────┘ └──────────────┘ └───────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                          │                                             │
+│  ┌───────────────────────▼─────────────────────────────────────────┐  │
+│  │  Prisma ORM → PostgreSQL (with @prisma/adapter-pg)              │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Design Decisions
 
-- **Feature-based modules** — Each domain (auth, inventory, hr, fiscal year, workspace) is a self-contained module with its own types, API routes, components, hooks, services, and stores.
-- **Hono for API** — Instead of Next.js Route Handlers, the project uses Hono with `@hono/zod-openapi` for OpenAPI 3.1-compliant route definitions. This gives us type-safe request/response validation and auto-generated Swagger docs.
+- **Feature-based modules** — Each domain is a self-contained module with its own types, API routes, components, hooks, services, and stores.
+- **Hono for API** — Instead of Next.js Route Handlers, uses Hono with `@hono/zod-openapi` for OpenAPI 3.1-compliant routes. Type-safe request/response validation and auto-generated Swagger docs.
 - **Better Auth** — Handles authentication (sign in/up, sessions) and multi-tenancy via its `organization` plugin.
-- **Zustand for global state** — Only when state needs to be shared across unrelated components (e.g., department filter, bulk selection, auth user).
-- **TanStack Query for server state** — All API data fetching uses `useQuery`/`useMutation`. No Redux-style stores for server data.
-- **Prisma with `@prisma/adapter-pg`** — Uses the new Prisma adapter for direct PostgreSQL connections (not the traditional `@prisma/client` driver adapter).
+- **Zustand for global client state** — Only when state must be shared across unrelated components (e.g., department filter, bulk selection, auth user).
+- **TanStack Query for server state** — All API data fetching uses `useQuery`/`useMutation`.
+- **Prisma with `@prisma/adapter-pg`** — Uses the new Prisma adapter for direct PostgreSQL connections.
+- **@better-fetch/fetch** — Typed HTTP client used in TanStack Query hooks.
 
 ---
 
-## 4. Directory Structure
+## 3. Directory Structure
 
 ```
 EthioERP/
 ├── prisma/
-│   ├── schema.prisma              # Database schema
+│   ├── schema.prisma              # Database schema (12 models, 7 enums)
 │   ├── migrations/                # Migration history
 │   └── migration_lock.toml
 ├── src/
 │   ├── app/
-│   │   ├── globals.css            # Tailwind + theme variables
-│   │   ├── layout.tsx             # Root layout (QueryProvider + TooltipProvider)
-│   │   ├── page.tsx               # Landing page
+│   │   ├── globals.css            # Tailwind + CSS custom properties + dark mode
+│   │   ├── layout.tsx             # Root layout (QueryProvider + TooltipProvider + fonts)
+│   │   ├── page.tsx               # Landing page (hero + CTA)
 │   │   ├── (auth)/
 │   │   │   ├── layout.tsx         # Auth layout (PublicNavbar)
 │   │   │   ├── signin/page.tsx
@@ -224,43 +105,64 @@ EthioERP/
 │   │   │   ├── layout.tsx         # Main layout (TenantProvider + MainAppShell)
 │   │   │   ├── dashboard/page.tsx
 │   │   │   ├── hr/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── [id]/page.tsx  # Edit employee
+│   │   │   │   └── add/page.tsx   # Redirect
 │   │   │   ├── inventory/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── [id]/page.tsx  # Edit item
+│   │   │   │   └── add/page.tsx   # Redirect
 │   │   │   ├── fiscalyear/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/page.tsx  # Edit fiscal year
 │   │   │   ├── profile/page.tsx
 │   │   │   └── workspace/
+│   │   │       ├── page.tsx
+│   │   │       └── [organizationId]/page.tsx
 │   │   ├── api/
-│   │   │   ├── [[...route]]/route.ts   # Hono catch-all handler
-│   │   │   ├── app.ts                  # OpenAPIHono app (registers all routes)
-│   │   │   ├── routes/                 # Health + Swagger docs
-│   │   │   ├── lib/                    # resolveActiveCompany helper
-│   │   │   └── types/                  # Context types
+│   │   │   ├── [[...route]]/route.ts   # Hono catch-all handler (GET/POST/PUT/PATCH/DELETE)
+│   │   │   ├── app.ts                  # OpenAPIHono app — registers all module routes
+│   │   │   ├── routes/
+│   │   │   │   ├── health.ts           # GET /api/v1/health
+│   │   │   │   └── docs.ts            # Swagger UI + OpenAPI JSON
+│   │   │   ├── lib/
+│   │   │   │   └── resolveActiveCompany.ts  # Session/org/company validation helper
+│   │   │   └── types/
+│   │   │       └── context.ts          # AppVariables, isOrganizationOwner()
 │   │   └── onboarding/page.tsx
 │   ├── generated/prisma/          # Auto-generated Prisma client
 │   ├── hooks/
-│   │   └── use-mobile.ts
+│   │   └── use-mobile.ts          # Responsive sidebar hook
 │   ├── lib/
-│   │   ├── utils.ts               # cn() helper
-│   │   ├── db.ts                  # PrismaClient singleton
+│   │   ├── utils.ts               # cn() helper (clsx + tailwind-merge)
+│   │   ├── db.ts                  # PrismaClient singleton (HMR-safe with globalThis)
 │   │   ├── auth.ts                # Better Auth server config
 │   │   └── auth-client.ts         # Better Auth client config
 │   ├── modules/
-│   │   ├── auth/                  # Auth module (PascalCase types)
-│   │   ├── company/               # Company CRUD (org-level auth)
-│   │   ├── fiscalyear/            # Fiscal year (camelCase, renamed store)
+│   │   ├── auth/                  # Auth module
+│   │   ├── company/               # Company CRUD
+│   │   ├── workspace/             # Organization management + TenantProvider
+│   │   ├── fiscalyear/            # Fiscal year (Ethiopian & Gregorian)
 │   │   ├── hr/                    # Employee management
-│   │   ├── inventory/             # Inventory management
-│   │   └── workspace/             # Organization management
+│   │   └── inventory/             # Inventory management
 │   ├── providers/
-│   │   └── QueryProvider.tsx      # TanStack Query client
-│   ├── proxy.ts                   # Middleware (session + onboarding checks)
+│   │   └── QueryProvider.tsx      # TanStack Query client provider
+│   ├── proxy.ts                   # Next.js middleware (session + onboarding checks)
 │   └── shared/
 │       ├── lib/
 │       │   ├── openapi.ts         # OpenAPI document config
-│       │   └── slug.ts            # Slugify utility
-│       ├── store/                 # Shared stores (stats counters)
+│       │   ├── slug.ts            # Slugify utility
+│       │   └── form-errors.ts     # TanStack Form error formatting
+│       ├── store/
+│       │   ├── inventoryStatsStore.ts  # Low-stock count (read by sidebar badge)
+│       │   └── employeeStatsStore.ts   # On-leave count (read by sidebar badge)
 │       └── components/
-│           ├── ui/                # 28 shadcn/ui components
-│           ├── layout/            # MainAppShell, PublicNavbar, etc.
+│           ├── ui/                # 26+ shadcn/ui components
+│           ├── layout/
+│           │   ├── MainAppShell.tsx
+│           │   ├── PublicNavbar.tsx
+│           │   ├── LandingCta.tsx
+│           │   └── AuthNavActions.tsx
 │           ├── app-sidebar.tsx
 │           ├── site-header.tsx
 │           ├── page-header.tsx
@@ -269,9 +171,12 @@ EthioERP/
 │           ├── nav-secondary.tsx
 │           ├── nav-documents.tsx
 │           ├── section-cards.tsx
-│           └── chart-area-interactive.tsx
-├── .env                           # Environment variables
-├── prisma.config.ts               # Prisma CLI config
+│           ├── chart-area-interactive.tsx
+│           ├── data-table.tsx
+│           ├── data-table-column-header.tsx
+│           └── data-table-pagination.tsx
+├── .env                           # Environment variables (gitignored)
+├── prisma.config.ts               # Prisma CLI config (dotenv + schema path)
 ├── components.json                # shadcn/ui configuration
 ├── next.config.ts
 ├── postcss.config.mjs
@@ -282,9 +187,9 @@ EthioERP/
 
 ---
 
-## 5. Multi-Tenancy Model
+## 4. Multi-Tenancy Model
 
-The project uses a **two-level tenancy** system:
+Two-level tenancy system:
 
 ```
 Organization (Better Auth tenant)
@@ -302,13 +207,13 @@ Managed by **Better Auth's Organization plugin**. Each user can belong to multip
 
 ### Company
 
-An application-level entity that scopes ERP data. Companies are created within organizations. The active company is stored in a cookie named `activeCompanyId`.
+An application-level entity that scopes ERP data. Companies are created within organizations. The active company is stored in a cookie named `activeCompanyId` (constant defined in `src/modules/company/types/constants.ts`).
 
 ### TenantProvider
 
-The `TenantProvider` at `src/modules/workspace/components/TenantProvider.tsx` syncs the Better Auth session user and the active workspace/company into two Zustand stores:
-- `authStore` (app-wide user state)
-- `fiscalYearStore` (fiscal-year-specific auth + tenant IDs)
+The `TenantProvider` at `src/modules/workspace/components/TenantProvider.tsx` syncs the Better Auth session user and the active workspace/company into Zustand stores:
+- `authStore` — app-wide user state
+- `fiscalYearStore` / `tenantStore` — tenant/company IDs
 
 ### How API Routes Get Tenant Context
 
@@ -322,7 +227,7 @@ Every module API route calls `resolveActiveCompany(c)` which:
 
 ---
 
-## 6. Authentication (Better Auth)
+## 5. Authentication (Better Auth)
 
 ### Server Config — `src/lib/auth.ts`
 
@@ -350,17 +255,7 @@ export const authClient = createAuthClient({
 
 ### Auth Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/auth/sign-up/email` | Register |
-| POST | `/api/v1/auth/sign-in/email` | Login |
-| POST | `/api/v1/auth/sign-out` | Logout |
-| GET | `/api/v1/auth/session` | Get current session |
-| POST | `/api/v1/auth/organization/create` | Create org |
-| GET | `/api/v1/auth/organization/list` | List user's orgs |
-| POST | `/api/v1/auth/organization/set-active` | Set active org |
-| POST | `/api/v1/auth/organization/update` | Update org |
-| ... | ... | (full Better Auth org API) |
+Better Auth handles the full auth API: sign-up/email, sign-in/email, sign-out, session, organization CRUD, member management, invitations.
 
 ### Auth Flow
 
@@ -372,7 +267,7 @@ export const authClient = createAuthClient({
 
 ---
 
-## 7. API Layer (Hono)
+## 6. API Layer (Hono)
 
 ### Architecture
 
@@ -394,9 +289,9 @@ All HTTP verbs are forwarded to a single **Hono** app defined in `src/app/api/ap
 const app = new OpenAPIHono<{ Variables: AppVariables }>().basePath("/api/v1");
 ```
 
-1. **Auth middleware** — Runs on every request, attaches `user` and `session` to context
+1. **Auth middleware** — Runs on every request, attaches `user` and `session` to context via `auth.api.getSession()`
 2. **Better Auth handler** — Proxies `POST`/`GET` `/auth/*` to `auth.handler()`
-3. **Module routes** — Registered via `app.openapi(routeDefinition, handler as never)` (the `as never` assertion avoids a union-type incompatibility with `@hono/zod-openapi`'s strict response type inference when handlers return both success and error responses)
+3. **Module routes** — Registered via `app.openapi(routeDefinition, handler as never)` (the `as never` assertion avoids a union-type incompatibility with `@hono/zod-openapi`'s strict response type inference)
 4. **Swagger docs** — Served at `/api/v1/ui` and `/api/v1/doc`
 
 ### Route Pattern
@@ -408,7 +303,6 @@ export const listEmployeesRoute = createRoute({
   method: "get",
   path: "/employees",
   tags: ["Employees"],
-  summary: "List employees for the active company",
   responses: {
     200: { description: "Employees", content: { "application/json": { schema: EmployeeListResponseSchema } } },
     ...authErrorResponses,
@@ -418,36 +312,15 @@ export const listEmployeesRoute = createRoute({
 export const listEmployeesHandler = async (c: Context<EmployeeEnv>) => {
   const context = await resolveActiveCompany(c);
   if (!context.ok) return context.response;
-  try {
-    const employees = await listEmployees(context.companyId);
-    return c.json({ employees }, 200);
-  } catch (error) {
-    return repositoryErrorResponse(c, error);
-  }
+  const employees = await listEmployees(context.companyId);
+  return c.json({ employees }, 200);
 };
-```
-
-Routes are registered in `app.ts` with `as never` due to Hono's strict type inference with union responses:
-
-```ts
-app.openapi(listEmployeesRoute, listEmployeesHandler as never);
 ```
 
 ### Context Helpers
 
-- `resolveActiveCompany(c)` — For company-scoped routes (Inventory, HR, FiscalYear). Extracts session, org, and company from cookie. Returns `{ ok: true, tenantId, companyId, userId }` or error `Response`.
-- `resolveOrgContext(c)` — For org-scoped routes (Company module). Extracts session and org only. Returns `{ ok: true, tenantId }` or error `Response`.
-
-### Error Handling
-
-```ts
-function repositoryErrorResponse(c: Context, error: unknown) {
-  if (error instanceof EntityRepositoryError) {
-    return c.json({ error: error.message }, error.status as never);
-  }
-  return c.json({ error: "Internal server error" }, 500);
-}
-```
+- `resolveActiveCompany(c)` — For company-scoped routes (Inventory, HR, FiscalYear). Returns `{ ok: true, tenantId, companyId, userId }` or error `Response`.
+- `resolveOrgContext(c)` — For org-scoped routes (Company module). Returns `{ ok: true, tenantId }` or error `Response`.
 
 ### Full API Endpoint Map
 
@@ -489,7 +362,7 @@ function repositoryErrorResponse(c: Context, error: unknown) {
 
 ---
 
-## 8. Frontend Module Architecture
+## 7. Frontend Module Architecture
 
 Every module follows the same structure:
 
@@ -503,7 +376,7 @@ modules/<name>/
 │   ├── <Entity>Form.tsx      # Create/edit form
 │   ├── <Entity>Edit.tsx      # Edit page wrapper
 │   ├── Create<Entity>Dialog.tsx
-│   ├── <Entity>DetailPanel.tsx  # Expandable row detail
+│   ├── <Entity>DetailPanel.tsx  # Expandable row detail (HR, Inventory)
 │   ├── <Entity>Actions.tsx   # Delete with confirmation
 │   ├── BulkActionBar.tsx     # Fixed bottom bulk action bar
 │   ├── CategoryFilter.tsx    # (or DepartmentFilter)
@@ -512,9 +385,7 @@ modules/<name>/
 │   └── use<Entities>.ts     # TanStack Query hooks
 ├── services/
 │   ├── <entity>Repository.ts # Prisma data access layer (server-side)
-│   └── <entity>Service.ts   # Business logic / validation
-├── services/
-│   └── <entity>Repository.ts # Prisma data access + DTO conversion
+│   └── <entity>Service.ts   # Business logic / computed stats
 ├── store/ (optional)
 │   ├── selectionStore.ts     # Bulk selection state (Zustand)
 │   └── <module>FilterStore.ts # Filter state (Zustand)
@@ -526,12 +397,12 @@ modules/<name>/
 
 | Layer | Location | Purpose |
 |-------|----------|---------|
-| **Types** | `types/index.ts` | Zod schemas for forms + API responses. Used for both validation and OpenAPI doc generation. |
-| **Repository** | `services/<entity>Repository.ts` | Prisma queries (findMany, create, update, delete) + DTO conversion (snake_case ↔ camelCase). Throws `EntityRepositoryError` with `status` field on failure. |
-| **Service** (optional) | `services/<entity>Service.ts` | Business rules, validation, computed stats. |
-| **API Routes** | `api/routes/route.ts` | Hono route definitions (`createRoute`) + handlers. Call repository functions, wrap errors via `repositoryErrorResponse`. |
-| **Hooks** | `hooks/use<Entities>.ts` | TanStack Query `useQuery`/`useMutation` wrapping `@better-fetch/fetch` calls to the API. |
-| **Components** | `components/` | UI components (Table, Form, Dialog, Actions, Filters, SearchBar). |
+| **Types** | `types/index.ts` | Zod schemas for forms + API responses. Used for validation and OpenAPI doc generation. |
+| **Repository** | `services/<entity>Repository.ts` | Prisma queries (findMany, create, update, delete). Throws `EntityRepositoryError` with `status` field on failure. |
+| **Service** | `services/<entity>Service.ts` | Business rules, validation, computed stats (e.g., `countLowStock`, `countEmployeesOnLeave`). |
+| **API Routes** | `api/routes/route.ts` | Hono route definitions (`createRoute`) + handlers. Call repository functions, wrap errors. |
+| **Hooks** | `hooks/use<Entities>.ts` | TanStack Query `useQuery`/`useMutation` wrapping `fetch` or `@better-fetch/fetch` calls. |
+| **Components** | `components/` | UI components (Table, Form, Dialogs, Filters, SearchBar, BulkActionBar, DetailPanel). |
 | **Store** | `store/` | Zustand for client-side global state (selection, filters). |
 
 ### Data Flow
@@ -539,11 +410,10 @@ modules/<name>/
 ```
 User action (click, form submit)
   → React component calls hook (e.g., useCreateEmployee)
-    → Hook fires fetch() (via @better-fetch/fetch) to /api/v1/employees
+    → Hook fires fetch() to /api/v1/employees
       → Hono handler receives request
-        → resolveActiveCompany(c) validates session/tenant/company (or resolveOrgContext for org-level routes)
-          → Repository function runs Prisma query with DTO conversion
-            → On error: repository throws RepositoryError → handler catches → repositoryErrorResponse(c, error)
+        → resolveActiveCompany(c) validates session/tenant/company
+          → Repository function runs Prisma query
             → On success: handler returns c.json(response, status)
               → TanStack Query updates cache
                 → UI re-renders
@@ -553,11 +423,14 @@ User action (click, form submit)
 
 ```ts
 // modules/hr/hooks/useEmployees.ts
-export function useEmployees() {
+export function useEmployees(search?: string, department?: string) {
   return useQuery({
-    queryKey: ["employees"],
+    queryKey: ["employees", search, department],
     queryFn: async () => {
-      const res = await fetch("/api/v1/employees");
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (department) params.set("department", department);
+      const res = await fetch(`/api/v1/employees?${params}`);
       if (!res.ok) throw new Error("Failed to fetch employees");
       return res.json();
     },
@@ -569,8 +442,7 @@ export function useCreateEmployee() {
   return useMutation({
     mutationFn: async (data: CreateEmployeeSchemaType) => {
       const res = await fetch("/api/v1/employees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to create employee");
@@ -598,97 +470,96 @@ export const EmployeeSchema = z.object({
 export const CreateEmployeeSchema = EmployeeSchema.omit({ id: true, companyId: true, updatedAt: true });
 ```
 
-### Pattern: Repository Layer
+### Pattern: TanStack React Form
+
+Forms use `@tanstack/react-form` with Zod validation:
 
 ```ts
-// modules/hr/services/employeeRepository.ts
-export class EmployeeRepositoryError extends Error {
-  constructor(message: string, public status: number) {
-    super(message);
-  }
-}
-
-export async function listEmployees(companyId: string) {
-  return prisma.employee.findMany({
-    where: { companyId },
-    orderBy: { name: "asc" },
+// hooks/useEmployeeForm.ts
+export function useEmployeeForm({ defaultValues, onSubmit }: EmployeeFormOptions) {
+  return useForm({
+    defaultValues,
+    validators: { onChange: CreateEmployeeSchema },
+    onSubmit: async ({ value }) => { await onSubmit(value); },
   });
-}
-
-export async function createEmployee(companyId: string, data: CreateEmployeeSchemaType) {
-  const existing = await prisma.employee.findUnique({
-    where: { companyId_email: { companyId, email: data.email } },
-  });
-  if (existing) {
-    throw new EmployeeRepositoryError("Employee with this email already exists", 409);
-  }
-  return prisma.employee.create({ data: { ...data, companyId } });
 }
 ```
 
 ---
 
-## 9. Database Schema (Prisma)
+## 8. Database Schema (Prisma)
 
-### Entity Relationship Diagram (text)
+### Models
+
+| Model | Table | Description |
+|-------|-------|-------------|
+| `User` | `user` | Better Auth user accounts |
+| `Session` | `session` | Auth sessions with `activeOrganizationId` |
+| `Account` | `account` | OAuth/provider accounts |
+| `Verification` | `verification` | Email verification codes |
+| `Organization` | `organization` | Better Auth tenant (multi-tenant root) |
+| `Member` | `member` | User ↔ Organization membership with role |
+| `Invitation` | `invitation` | Org invitations |
+| `Company` | `companies` | ERP data scope (belongs to an organization) |
+| `FiscalYear` | `fiscal_years` | Fiscal year periods (Ethiopian & Gregorian) |
+| `InventoryItem` | `inventory_items` | Inventory with category, SKU, quantity, price |
+| `Employee` | `employees` | Employee records with department and status |
+
+### Entity Relationship
 
 ```
-┌─────────────┐       ┌──────────────┐       ┌─────────────┐
-│   User      │       │ Organization  │       │  Company    │
-├─────────────┤       ├──────────────┤       ├─────────────┤
-│ id (PK)     │◄────┐ │ id (PK)      │◄────┐ │ id (PK)     │
-│ name        │      │ │ name         │      │ │ name        │
-│ email (UQ)  │      │ │ slug (UQ)    │      │ │ slug        │
-│ ...         │      │ │ logo         │      │ │ orgId (FK)──┘
-└─────────────┘      │ │              │      │ └─────────────┘
-                     │ └──────────────┘      │       │
-┌─────────────┐      │                       │       ├──────────────────┐
-│   Member    │      │                       │       │                  │
-├─────────────┤      │                       │  ┌────▼────┐    ┌───────▼───┐
-│ id (PK)     │      │                       │  │ Fiscal  │    │ Inventory │
-│ orgId (FK)──┼──────┘                       │  │ Year    │    │   Item    │
-│ userId (FK)─┼────┐                         │  ├─────────┤    ├───────────┤
-│ role        │    │                         │  │ id (PK) │    │ id (PK)   │
-└─────────────┘    │                         │  │ tenant  │    │ company   │
-                   │                         │  │ company │    │   (FK)    │
-┌─────────────┐    │                         │  │ name    │    │ name      │
-│  Session    │    │                         │  │ dates   │    │ sku       │
-├─────────────┤    │                         │  │ status  │    │ category  │
-│ id (PK)     │    │                         │  │ ⋮       │    │ quantity  │
-│ userId (FK)─┼────┘                         │  └─────────┘    │ price     │
-│ token (UQ)  │                              │                 │ ⋮         │
-│ orgId       │                              │                 └───────────┘
-└─────────────┘                              │
-                                             │  ┌─────────────┐
-                                             │  │  Employee   │
-                                             │  ├─────────────┤
-                                             │  │ id (PK)     │
-                                             │  │ company     │
-                                             │  │   (FK)      │
-                                             │  │ name        │
-                                             │  │ email       │
-                                             │  │ department  │
-                                             │  │ status      │
-                                             │  └─────────────┘
-                                             └── (User models continue
-                                                  Account, Verification,
-                                                  Invitation)
+┌──────────────┐       ┌──────────────┐       ┌─────────────┐
+│    User      │       │ Organization  │       │  Company    │
+├──────────────┤       ├──────────────┤       ├─────────────┤
+│ id (PK)      │◄────┐ │ id (PK)      │◄────┐ │ id (PK)     │
+│ name         │      │ │ name         │      │ │ name        │
+│ email (UQ)   │      │ │ slug (UQ)    │      │ │ slug        │
+│ ...          │      │ │ logo         │      │ │ orgId (FK)──┘
+└──────────────┘      │ │              │      │ └─────────────┘
+                      │ └──────────────┘      │       │
+┌──────────────┐      │                       │       ├───────────────────┐
+│   Member     │      │                       │       │                   │
+├──────────────┤      │                       │  ┌────▼────┐    ┌────────▼──┐
+│ id (PK)      │      │                       │  │ Fiscal  │    │ Inventory │
+│ orgId (FK)───┼──────┘                       │  │ Year    │    │   Item    │
+│ userId (FK)──┼────┐                         │  ├─────────┤    ├───────────┤
+│ role         │    │                         │  │ id (PK) │    │ id (PK)   │
+└──────────────┘    │                         │  │ tenant  │    │ company   │
+                    │                         │  │ company │    │   (FK)    │
+┌──────────────┐    │                         │  │ name    │    │ name      │
+│   Session    │    │                         │  │ dates   │    │ sku       │
+├──────────────┤    │                         │  │ status  │    │ category  │
+│ id (PK)      │    │                         │  │ ⋮       │    │ quantity  │
+│ userId (FK)──┼────┘                         │  └─────────┘    │ price     │
+│ token (UQ)   │                              │                 │ ⋮         │
+│ orgId        │                              │                 └───────────┘
+└──────────────┘                              │
+                                              │  ┌─────────────┐
+                                              │  │  Employee   │
+                                              │  ├─────────────┤
+                                              │  │ id (PK)     │
+                                              │  │ company     │
+                                              │  │   (FK)      │
+                                              │  │ name        │
+                                              │  │ email       │
+                                              │  │ department  │
+                                              │  │ status      │
+                                              │  └─────────────┘
+                                              └── (User models: Account,
+                                                   Verification, Invitation)
 ```
 
-### Key Tables
+### Enums
 
-| Table | Description |
-|-------|-------------|
-| `user` | Better Auth user accounts |
-| `session` | Auth sessions with `activeOrganizationId` |
-| `account` | OAuth/provider accounts |
-| `organization` | Better Auth tenant (multi-tenant root) |
-| `member` | User ↔ Organization membership with role |
-| `invitation` | Org invitations |
-| `companies` | ERP data scope (belongs to an organization) |
-| `fiscal_years` | Fiscal year periods (supports Ethiopian & Gregorian) |
-| `inventory_items` | Inventory with category, SKU, quantity, price |
-| `employees` | Employee records with department and status |
+| Enum | Values |
+|------|--------|
+| `CalendarType` | `ETHIOPIAN`, `GREGORIAN` |
+| `FiscalYearStatus` | `OPEN`, `CLOSED`, `REOPENED` |
+| `InventoryCategory` | `Stationery`, `Electronics`, `Furniture`, `Other` |
+| `InventoryUnit` | `pcs`, `box`, `kg`, `liter` |
+| `InventoryItemStatus` | `active`, `inactive` |
+| `EmployeeDepartment` | `Store`, `Engineering`, `Finance`, `Marketing` |
+| `EmployeeStatus` | `active`, `on_leave` |
 
 ### Uniqueness & Indexes
 
@@ -700,7 +571,7 @@ export async function createEmployee(companyId: string, data: CreateEmployeeSche
 
 ---
 
-## 10. State Management
+## 9. State Management
 
 ### Three Layers of State
 
@@ -719,9 +590,9 @@ export async function createEmployee(companyId: string, data: CreateEmployeeSche
 | `modules/hr/store/departmentFilterStore.ts` | Active department filter |
 | `modules/inventory/store/selectionStore.ts` | Selected item IDs for bulk actions |
 | `modules/inventory/store/inventoryFilterStore.ts` | Active category filter |
-| `modules/fiscalyear/store/fiscalYearStore.ts` | `useTenantStore` (tenant/company IDs) + `useFiscalAuthStore` (auth user for FY) |
-| `shared/store/inventoryStatsStore.ts` | Low-stock item count (global badge) |
-| `shared/store/employeeStatsStore.ts` | Employees-on-leave count (global badge) |
+| `modules/fiscalyear/store/FiscalYearStore.ts` | `useTenantStore` (tenant/company IDs) + `useFiscalAuthStore` (auth user for FY) |
+| `shared/store/inventoryStatsStore.ts` | Low-stock item count (global badge in sidebar) |
+| `shared/store/employeeStatsStore.ts` | Employees-on-leave count (global badge in sidebar) |
 
 ### Store Pattern (Zustand)
 
@@ -741,14 +612,21 @@ export const useDepartmentFilterStore = create<DepartmentFilterState>((set) => (
 
 ---
 
-## 11. Middleware / Proxy
+## 10. Middleware / Proxy
 
-The file `src/proxy.ts` serves as Next.js **middleware** (applied via the `config.matcher` export).
+The file `src/proxy.ts` serves as Next.js **middleware**.
 
 ### Matched Paths
 
 ```ts
-matcher: ["/dashboard/:path*", "/fiscalyear/:path*", "/hr/:path*", "/inventory/:path*", "/profile/:path*", "/workspace/:path*"]
+matcher: [
+  "/dashboard/:path*",
+  "/fiscalyear/:path*",
+  "/hr/:path*",
+  "/inventory/:path*",
+  "/profile/:path*",
+  "/workspace/:path*",
+]
 ```
 
 ### Logic Flow
@@ -757,9 +635,9 @@ matcher: ["/dashboard/:path*", "/fiscalyear/:path*", "/hr/:path*", "/inventory/:
 Request to matched path
   → Check session (auth.api.getSession)
     → No session → redirect /signin
+  → Relaxed routes (/workspace, /profile, and subpaths) → allow through
   → Check activeOrganizationId
     → None → redirect /onboarding
-  → Relaxed routes (/workspace, /profile) → allow through
   → Check activeCompanyId cookie
     → None → redirect /onboarding
   → Verify company exists & belongs to org
@@ -769,7 +647,7 @@ Request to matched path
 
 ---
 
-## 12. Routing & Layouts
+## 11. Routing & Layouts
 
 ### Route Groups
 
@@ -781,10 +659,20 @@ src/app/
 ├── (main)/           # Group: sidebar + site header
 │   ├── dashboard/
 │   ├── hr/
+│   │   ├── page.tsx       # Employee table
+│   │   ├── [id]/page.tsx  # Edit employee
+│   │   └── add/page.tsx   # Redirect to /hr
 │   ├── inventory/
+│   │   ├── page.tsx       # Inventory table
+│   │   ├── [id]/page.tsx  # Edit item
+│   │   └── add/page.tsx   # Redirect to /inventory
 │   ├── fiscalyear/
+│   │   ├── page.tsx       # Fiscal year table
+│   │   └── [id]/page.tsx  # Edit fiscal year
 │   ├── profile/
 │   └── workspace/
+│       ├── page.tsx                # List organizations
+│       └── [organizationId]/       # Organization detail + company list
 ├── onboarding/       # No layout group, standalone
 └── api/              # Hono API
 ```
@@ -792,7 +680,7 @@ src/app/
 ### Layout Hierarchy
 
 ```
-RootLayout (QueryProvider + TooltipProvider)
+RootLayout (QueryProvider + TooltipProvider + fonts)
 ├── AuthLayout (PublicNavbar)          → /signin, /signup
 ├── MainLayout (TenantProvider + MainAppShell)
 │   └── Sidebar + SiteHeader + Content → /dashboard, /hr, /inventory, /fiscalyear, /profile
@@ -800,51 +688,58 @@ RootLayout (QueryProvider + TooltipProvider)
 └── APILayout (none)                   → /api/*
 ```
 
-### `MainAppShell.tsx` Logic
+### MainAppShell Logic
 
-```
-1. If pathname starts with /workspace → render children in a plain container (no sidebar)
+1. If pathname starts with `/workspace` → render children in a plain container (no sidebar)
 2. If still loading org/company → show skeleton
 3. If no complete selection → render children in plain container
 4. Otherwise → SidebarProvider → AppSidebar + SiteHeader + children
-```
 
 ---
 
-## 13. UI Component System
+## 12. UI Component System
 
-### shadcn/ui Components (28 total)
+### shadcn/ui Components (26+)
 
 Located in `src/shared/components/ui/`. Config file is `components.json`.
 
-Key components used: `sidebar`, `table`, `data-table`, `dialog`, `drawer`, `select`, `button`, `input`, `badge`, `card`, `breadcrumb`, `dropdown-menu`, `sheet`, `tabs`, `toggle`, `toggle-group`, `tooltip`, `checkbox`, `separator`, `skeleton`, `sonner` (toast), `chart`, `avatar`, `label`, `textarea`.
+Key components: `sidebar`, `table`, `dialog`, `drawer`, `select`, `button`, `input`, `badge`, `card`, `breadcrumb`, `dropdown-menu`, `sheet`, `tabs`, `toggle`, `toggle-group`, `tooltip`, `checkbox`, `separator`, `skeleton`, `sonner` (toast), `chart`, `avatar`, `label`, `textarea`.
 
-### Theme System
+### Data Table Components
 
-- Uses CSS custom properties for colors, shadows, fonts
-- Light/dark theme via `.dark` class
-- TailwindCSS 4 with `@custom-variant dark`
-- Fonts: Montserrat (sans), Fira Code (mono), Georgia (serif)
-- Sidebar colors are independently configurable from the main theme
+| Component | File | Description |
+|-----------|------|-------------|
+| `DataTable` | `shared/components/data-table.tsx` | Generic TanStack Table wrapper with sorting, filtering, pagination, expandable rows, row selection |
+| `DataTableColumnHeader` | `shared/components/data-table-column-header.tsx` | Sortable column header with dropdown |
+| `DataTablePagination` | `shared/components/data-table-pagination.tsx` | Pagination controls (page size, page nav, row count) |
 
 ### Custom Components
 
 | Component | File | Description |
 |-----------|------|-------------|
-| `AppSidebar` | `shared/components/app-sidebar.tsx` | Main sidebar navigation |
-| `SiteHeader` | `shared/components/site-header.tsx` | Breadcrumb-based header |
+| `AppSidebar` | `shared/components/app-sidebar.tsx` | Main sidebar navigation with badges for low stock / on-leave counts |
+| `SiteHeader` | `shared/components/site-header.tsx` | Breadcrumb-based header with sidebar trigger |
 | `PageHeader` | `shared/components/page-header.tsx` | Reusable title + action button |
-| `MainAppShell` | `shared/components/layout/MainAppShell.tsx` | App shell with sidebar |
+| `MainAppShell` | `shared/components/layout/MainAppShell.tsx` | App shell with sidebar provider |
 | `PublicNavbar` | `shared/components/layout/PublicNavbar.tsx` | Landing/auth navbar |
-| `AuthNavActions` | `shared/components/layout/AuthNavActions.tsx` | Sign in/up or user menu |
-| `NavMain` | `shared/components/nav-main.tsx` | Main nav group |
-| `NavUser` | `shared/components/nav-user.tsx` | User dropdown |
-| `SectionCards` | `shared/components/section-cards.tsx` | Dashboard stat cards |
-| `ChartAreaInteractive` | `shared/components/chart-area-interactive.tsx` | Dashboard chart |
+| `AuthNavActions` | `shared/components/layout/AuthNavActions.tsx` | Sign in/up or user menu dropdown |
+| `LandingCta` | `shared/components/layout/LandingCta.tsx` | Conditional CTA (Get Started / Go to Dashboard) |
+| `NavMain` | `shared/components/nav-main.tsx` | Main nav group in sidebar |
+| `NavUser` | `shared/components/nav-user.tsx` | User avatar + dropdown in sidebar footer |
+| `SectionCards` | `shared/components/section-cards.tsx` | Dashboard stat cards (demo) |
+| `ChartAreaInteractive` | `shared/components/chart-area-interactive.tsx` | Dashboard area chart (demo) |
+
+### Theme System
+
+- CSS custom properties for colors, shadows, fonts
+- Light/dark theme via `.dark` class
+- TailwindCSS 4 with `@custom-variant dark`
+- Fonts: Geist (sans, via next/font), Fira Code (mono, via CSS)
+- Sidebar colors independently configurable from main theme
 
 ---
 
-## 14. API Documentation
+## 13. API Documentation
 
 The API is documented via **Swagger UI** at:
 
@@ -858,44 +753,33 @@ The OpenAPI JSON spec is at:
 http://localhost:3000/api/v1/doc
 ```
 
-Configuration is in `src/shared/lib/openapi.ts`. Routes are documented inline using `@hono/zod-openapi` — each route definition includes path, method, tags, summary, request schemas (params, body), and response schemas.
+Configuration is in `src/shared/lib/openapi.ts`. Routes are documented inline using `@hono/zod-openapi` — each route definition includes path, method, tags, and response schemas.
 
 ---
 
-## 15. Environment Variables
+## 14. Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string for Prisma |
-| `SHADOW_DATABASE_URL` | Yes | Separate PG database for Prisma Migrate |
-| `BETTER_AUTH_URL` | Yes | Base URL of the app (http://localhost:3000) |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `BETTER_AUTH_URL` | Yes | Base URL of the app (e.g., `http://localhost:3000`) |
 | `BETTER_AUTH_SECRET` | Yes | Secret key for session encryption (min 32 chars) |
 
-### `.env.example`
-
-```env
-# ── Database ──────────────────────────────────────────
-DATABASE_URL="postgres://postgres:postgres@localhost:51214/template1?sslmode=disable&connection_limit=10&connect_timeout=0&max_idle_connection_lifetime=0&pool_timeout=0&socket_timeout=0"
-SHADOW_DATABASE_URL="postgres://postgres:postgres@localhost:51215/template1?sslmode=disable&connection_limit=10&connect_timeout=0&max_idle_connection_lifetime=0&pool_timeout=0&socket_timeout=0"
-
-# ── Better Auth ───────────────────────────────────────
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=your-secret-here-min-32-chars-long
-```
+Note: `SHADOW_DATABASE_URL` is no longer required with Prisma 7.8's migration engine.
 
 ---
 
-## 16. Common Patterns
+## 15. Common Patterns
 
 ### Adding a New Module
 
 1. **Database** — Add model to `prisma/schema.prisma`, run `npx prisma migrate dev --name <name>`
-2. **Types** — Create `modules/<name>/types/index.ts` with Zod schemas (`.openapi("Name")` for OpenAPI, `CreateSchema = BaseSchema.omit({...})`, `UpdateSchema = CreateSchema.partial()`, array list response, `{ success: true }` for deletes)
-3. **Repository** — Create `modules/<name>/services/<entity>Repository.ts` (Prisma queries + DTO conversion layer)
-4. **API Routes** — Create `modules/<name>/api/routes/route.ts` with Hono route definitions + handlers. Use `resolveActiveCompany(c)` for company-level routes or `resolveOrgContext(c)` for org-level routes. Register handlers with `app.openapi(route, handler as never)`.
+2. **Types** — Create `modules/<name>/types/index.ts` with Zod schemas (`.openapi("Name")` for OpenAPI, `CreateSchema = BaseSchema.omit({...})`, `UpdateSchema = CreateSchema.partial()`, list response schema, delete response schema)
+3. **Repository** — Create `modules/<name>/services/<entity>Repository.ts` (Prisma queries)
+4. **API Routes** — Create `modules/<name>/api/routes/route.ts` with Hono route definitions + handlers. Use `resolveActiveCompany(c)` for company-level routes or `resolveOrgContext(c)` for org-level routes.
 5. **Register routes** — Import and register in `src/app/api/app.ts` (use `as never` for handler type assertion)
-6. **Hooks** — Create `modules/<name>/hooks/use<Entities>.ts` with TanStack Query hooks using `@better-fetch/fetch` with `createSchema` for type-safe API calls
-7. **Components** — Create table (TanStack Table), form (reused for create/edit), dialogs, filters, search bar, bulk action bar, detail panel
+6. **Hooks** — Create `modules/<name>/hooks/use<Entities>.ts` with TanStack Query hooks
+7. **Components** — Create table (TanStack Table), form (TanStack React Form), dialogs, filters, search bar, bulk action bar, detail panel
 8. **Stores** — Add Zustand stores if needed (selection, filters, stats counts)
 9. **Pages** — Create pages in `src/app/(main)/<name>/`
 10. **Middleware** — Add path to `config.matcher` in `src/proxy.ts`
@@ -903,70 +787,30 @@ BETTER_AUTH_SECRET=your-secret-here-min-32-chars-long
 
 ### CRUD Route Template
 
-Every module has 5 standard routes: LIST (GET), GET (GET /:id), CREATE (POST), UPDATE (PATCH /:id), DELETE (DELETE /:id). See Inventory or HR modules as the canonical example.
+Every module has 5 standard routes: LIST (GET), GET (GET /:id), CREATE (POST), UPDATE (PATCH /:id), DELETE (DELETE /:id). Fiscal Year additionally has activate/close/reopen. See Inventory or HR modules as the canonical example.
 
 ### Error Handling
 
 - Repositories throw `EntityRepositoryError` (extends `Error` with a `status` field)
 - Route handlers catch these and return `c.json({ error: message }, statusCode)`
 - TanStack Query hooks expose `error` state for the UI
-- Forms show errors via toast (sonner) or inline messages
+- Forms show errors via toast (sonner)
 
 ### Business Logic Pattern
 
-Business rules should live in `services/<entity>Service.ts`, **not** in the repository or components. Example from `inventoryService.ts`:
+Business rules live in `services/<entity>Service.ts`, **not** in the repository or components:
 
 ```ts
-export function getLowStockItems(items: InventoryItem[]) {
-  return items.filter((item) => item.quantity <= item.reorderLevel);
+// modules/inventory/services/inventoryService.ts
+export function countLowStock(items: InventoryItem[]) {
+  return items.filter((item) => item.quantity <= item.reorderLevel).length;
 }
 ```
 
----
+### Fiscal Year Calendar Conversion
 
-## 17. FAQ / Troubleshooting
+The `modules/fiscalyear/services/convertCalendar.ts` handles Ethiopian ↔ Gregorian date conversion using marker-based math. Fiscal years store both Ethiopian and Gregorian start/end dates.
 
-### Prisma client not found
+### HMR Safety
 
-If you see errors about missing Prisma client, regenerate:
-
-```bash
-npx prisma generate
-```
-
-### Migration issues
-
-```bash
-# Reset DB and re-run all migrations
-npx prisma migrate reset
-
-# Create a new migration after schema changes
-npx prisma migrate dev --name description_of_change
-```
-
-### "No active organization" after sign in
-
-Follow the onboarding flow: create an organization → create a company. If redirected in a loop, clear cookies for `localhost:3000` and sign in again.
-
-### Port already in use
-
-PostgreSQL ports `51214` and `51215` must be available. Change them in both `docker-compose.yml` and `.env` if needed.
-
-### Better Auth URL mismatch
-
-`BETTER_AUTH_URL` must match the actual app URL (including port). For local dev: `http://localhost:3000`.
-
-### HMR / Prisma Client stale
-
-The `src/lib/db.ts` file handles HMR by checking if the global Prisma client has the `employee` delegate. If you add new models and see "unknown model" errors, restart the dev server.
-
-### Lint & TypeCheck
-
-```bash
-npm run lint          # ESLint
-npx tsc --noEmit     # TypeScript check
-```
-
----
-
-> **Pro tip:** The Inventory and HR modules are the canonical reference implementations. When in doubt about patterns, folder structure, or conventions, look at `src/modules/inventory/` or `src/modules/hr/`.
+The Prisma client singleton in `src/lib/db.ts` uses `globalThis` caching with a delegate check to survive Next.js hot module replacement without leaking connections.
