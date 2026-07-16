@@ -23,14 +23,28 @@ type Props = {
 
 export function FiscalYearActions({ fiscalYear }: Props) {
   const router = useRouter();
-  const { deleteFiscalYear, closeFiscalYear, reopenFiscalYear } =
-    useFiscalYear();
+  const {
+    deleteFiscalYear,
+    closeFiscalYear,
+    reopenFiscalYear,
+    activateFiscalYear,
+  } = useFiscalYear();
   const { tenantId, companyId } = useTenantStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
 
+  const canActivate =
+    (fiscalYear.status === "OPEN" || fiscalYear.status === "REOPENED") &&
+    !fiscalYear.is_active;
+  const canClose =
+    fiscalYear.status === "OPEN" || fiscalYear.status === "REOPENED";
+
   function closeDialog() {
     setDialog(null);
+  }
+
+  function goBackToList() {
+    router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
   }
 
   function handleDelete() {
@@ -44,7 +58,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("delete");
         try {
           await deleteFiscalYear(fiscalYear.id);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          goBackToList();
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
             setDialog({
@@ -56,6 +70,39 @@ export function FiscalYearActions({ fiscalYear }: Props) {
             setDialog({
               title: "Error",
               message: "Failed to delete fiscal year.",
+              variant: "alert",
+            });
+          }
+        } finally {
+          setLoading(null);
+        }
+      },
+    });
+  }
+
+  function handleActivate() {
+    setDialog({
+      title: "Activate Fiscal Year",
+      message:
+        "This will make this fiscal year active for transactions and deactivate any other active fiscal year.",
+      confirmText: "Activate",
+      onConfirm: async () => {
+        closeDialog();
+        setLoading("activate");
+        try {
+          await activateFiscalYear(fiscalYear.id);
+          goBackToList();
+        } catch (error) {
+          if (error instanceof FiscalYearApiError) {
+            setDialog({
+              title: "Error",
+              message: error.detail,
+              variant: "alert",
+            });
+          } else {
+            setDialog({
+              title: "Error",
+              message: "Failed to activate fiscal year.",
               variant: "alert",
             });
           }
@@ -79,7 +126,7 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         setLoading("close");
         try {
           await closeFiscalYear(fiscalYear.id, justification);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          goBackToList();
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
             setDialog({
@@ -112,9 +159,8 @@ export function FiscalYearActions({ fiscalYear }: Props) {
         closeDialog();
         setLoading("reopen");
         try {
-          const reopened = await reopenFiscalYear(fiscalYear.id, justification);
-          console.log("reopened:", reopened);
-          router.push(`/fiscalyear?tenant_id=${tenantId}&company_id=${companyId}`);
+          await reopenFiscalYear(fiscalYear.id, justification);
+          goBackToList();
         } catch (error) {
           if (error instanceof FiscalYearApiError) {
             setDialog({
@@ -153,7 +199,17 @@ export function FiscalYearActions({ fiscalYear }: Props) {
       )}
 
       <div className="space-x-2">
-        {fiscalYear.status === "OPEN" && (
+        {canActivate && (
+          <button
+            onClick={handleActivate}
+            disabled={loading === "activate"}
+            className="text-blue-600 hover:underline text-sm disabled:opacity-50"
+          >
+            {loading === "activate" ? "Activating..." : "Activate"}
+          </button>
+        )}
+
+        {canClose && (
           <button
             onClick={handleClose}
             disabled={loading === "close"}

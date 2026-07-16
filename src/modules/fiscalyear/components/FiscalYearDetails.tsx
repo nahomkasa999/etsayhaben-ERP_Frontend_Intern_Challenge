@@ -27,7 +27,14 @@ export function FiscalYearDetails({ fiscalYear, calendarView }: Props) {
 
   return (
     <tr className="border-b">
-      <td className="p-2">{fiscalYear.fiscal_year_name}</td>
+      <td className="p-2">
+        {fiscalYear.fiscal_year_name}
+        {fiscalYear.is_active && (
+          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 ml-1">
+            active
+          </span>
+        )}
+      </td>
       <td className="p-2">
         <span
           className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[fiscalYear.status]}`}

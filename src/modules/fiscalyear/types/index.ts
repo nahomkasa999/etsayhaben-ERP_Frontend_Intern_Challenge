@@ -9,6 +9,7 @@ export interface FiscalYear {
   end_date_eth: string;
   end_date_gre: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
+  is_active: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -19,7 +20,6 @@ export interface FiscalYear {
   closed_at?: string;
   reopened_by?: string;
   reopened_at?: string;
-  reopen_expires_at?: string;
   justification?: string;
 }
 
@@ -50,6 +50,7 @@ export interface CreateFiscalYearResponse {
   end_date_eth: string;
   end_date_gre: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
+  is_active: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -67,6 +68,7 @@ export interface FiscalYearList {
   id: string;
   fiscal_year_name: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
+  is_active: boolean;
   start_date_eth: string;
   end_date_eth: string;
   start_date_gre: string;
@@ -93,6 +95,7 @@ export interface ActiveFiscalYearResponse {
   end_date_eth: string;
   end_date_gre: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
+  is_active: boolean;
 }
 
 //Get Fiscal Year By Date
@@ -145,6 +148,7 @@ export interface ActivateFiscalYearRequestBase {
 export interface ActivateFiscalYearResponse {
   id: string;
   status: "OPEN" | "CLOSED" | "REOPENED";
+  is_active: boolean;
   activated_by: string;
   activated_at: string;
 }
@@ -165,6 +169,7 @@ export interface CloseFiscalYearRequestBase {
   company_id: string;
   closed_by: string;
   justification: string;
+  bypassSoleCheck?: boolean;
 }
 
 export interface CloseFiscalYearResponse {
@@ -199,7 +204,6 @@ export interface ReopenFiscalYearResponse {
   status: "REOPENED";
   reopened_by: string;
   reopened_at: string;
-  reopen_expires_at: string;
   justification: string;
 }
 

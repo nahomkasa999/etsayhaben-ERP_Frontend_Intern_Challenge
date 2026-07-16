@@ -116,6 +116,7 @@ export function useFiscalYear() {
     createFiscalYear,
     updateFiscalYear,
     deleteFiscalYear,
+    activateFiscalYear,
     closeFiscalYear,
     reopenFiscalYear,
   };
