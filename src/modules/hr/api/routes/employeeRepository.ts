@@ -4,7 +4,7 @@ import type {
   CreateEmployeeInput,
   Employee,
   UpdateEmployeeInput,
-} from "../types";
+} from "../../types";
 
 export class EmployeeRepositoryError extends Error {
   status: number;

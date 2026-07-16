@@ -30,7 +30,7 @@ import {
   listFiscalYears,
   reopenFiscalYear,
   updateFiscalYear,
-} from "@/modules/fiscalyear/services/fiscalYearRepository";
+} from "./fiscalYearRepository";
 
 const ErrorSchema = z
   .object({

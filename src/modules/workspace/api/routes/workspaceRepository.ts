@@ -2,7 +2,7 @@ import prisma from "@/lib/db";
 import type {
   Workspace,
   WorkspaceWithCompanies,
-} from "../types";
+} from "../../types";
 
 export class WorkspaceRepositoryError extends Error {
   status: number;

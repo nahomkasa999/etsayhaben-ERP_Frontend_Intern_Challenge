@@ -4,7 +4,7 @@ import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { SignUpSchema as signUpSchema } from "@/modules/auth/types";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { formatFieldErrors } from "@/modules/auth/services/authService";
+import { formatFieldErrors } from "@/shared/lib/form-errors";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";

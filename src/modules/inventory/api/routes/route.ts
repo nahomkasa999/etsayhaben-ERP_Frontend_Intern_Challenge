@@ -19,7 +19,7 @@ import {
   InventoryRepositoryError,
   listInventoryItems,
   updateInventoryItem,
-} from "@/modules/inventory/services/inventoryRepository";
+} from "./inventoryRepository";
 
 const ErrorSchema = z
   .object({

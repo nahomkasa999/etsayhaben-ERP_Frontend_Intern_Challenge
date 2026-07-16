@@ -4,7 +4,7 @@ import type {
   Company,
   CreateCompanyInput,
   UpdateCompanyInput,
-} from "../types";
+} from "../../types";
 
 export class CompanyRepositoryError extends Error {
   status: number;

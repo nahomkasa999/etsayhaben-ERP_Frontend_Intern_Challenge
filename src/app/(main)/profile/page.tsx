@@ -88,15 +88,9 @@ export default function ProfilePage() {
               <span className="text-muted-foreground">Name</span>
               <span className="font-medium">{name}</span>
             </div>
-            <div className="flex justify-between gap-4 border-b pb-2">
+            <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Email</span>
               <span className="font-medium">{email}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">User ID</span>
-              <span className="truncate font-mono text-xs font-medium">
-                {user?.id || "—"}
-              </span>
             </div>
           </CardContent>
         </Card>

@@ -11,7 +11,7 @@ import { useCompany } from "@/modules/company/hooks/useCompany";
 import {
   useFiscalAuthStore,
   useTenantStore,
-} from "@/modules/fiscalyear/store/fiscalYearStore";
+} from "@/modules/fiscalyear/store/FiscalYearStore";
 
 import { useWorkspace } from "../hooks/useWorkspace";
 

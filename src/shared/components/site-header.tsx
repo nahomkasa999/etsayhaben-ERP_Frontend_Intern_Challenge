@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/ui/breadcrumb";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
-import { useTenantStore } from "@/modules/fiscalyear/store/fiscalYearStore";
+import { useTenantStore } from "@/modules/fiscalyear/store/FiscalYearStore";
 import { useWorkspace } from "@/modules/workspace/hooks/useWorkspace";
 
 type Crumb = {

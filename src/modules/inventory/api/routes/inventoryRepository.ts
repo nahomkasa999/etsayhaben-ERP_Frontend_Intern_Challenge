@@ -4,7 +4,7 @@ import type {
   CreateInventoryItemInput,
   InventoryItem,
   UpdateInventoryItemInput,
-} from "../types";
+} from "../../types";
 
 export class InventoryRepositoryError extends Error {
   status: number;

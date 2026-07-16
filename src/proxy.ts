@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { NextRequest } from "next/server";
 
-import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/types/constants";
 
 import prisma from "@/lib/db";
 

@@ -1,6 +1,6 @@
 import type { FiscalYear as PrismaFiscalYear } from "@/generated/prisma/client";
 import prisma from "@/lib/db";
-import { deriveFiscalYearDates } from "./convertCalendar";
+import { deriveFiscalYearDates } from "../../services/convertCalendar";
 import type {
   ActivateFiscalYearResponse,
   CloseFiscalYearResponse,
@@ -10,7 +10,7 @@ import type {
   ReopenFiscalYearResponse,
   UpdateFiscalYearInput,
   UpdateFiscalYearResponse,
-} from "../types";
+} from "../../types";
 
 export class FiscalYearRepositoryError extends Error {
   status: number;

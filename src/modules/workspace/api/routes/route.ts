@@ -5,7 +5,7 @@ import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
-import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/types/constants";
 import { slugify } from "@/shared/lib/slug";
 import type { AppVariables } from "@/app/api/types/context";
 import {
@@ -19,7 +19,7 @@ import {
   ensureUniqueOrganizationSlug,
   listOrganizations,
   WorkspaceRepositoryError,
-} from "@/modules/workspace/services/workspaceRepository";
+} from "./workspaceRepository"
 
 const ErrorSchema = z
   .object({

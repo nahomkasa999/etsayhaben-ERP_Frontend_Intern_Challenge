@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/ui/card";
 
 import { useFiscalYear } from "../hooks/useFiscalyear";
-import { useTenantStore } from "../store/fiscalYearStore";
+import { useTenantStore } from "../store/FiscalYearStore";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FiscalYearApiError } from "../types";
 import type { FiscalYear } from "../types";

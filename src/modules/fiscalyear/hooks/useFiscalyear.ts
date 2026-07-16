@@ -20,7 +20,7 @@ import {
   type FiscalYearFormValues,
   type UpdateFiscalYearInput,
 } from "../types";
-import { useTenantStore } from "../store/fiscalYearStore";
+import { useTenantStore } from "../store/FiscalYearStore";
 
 const fiscalYearFetch = createFetch({
   baseURL: "/api/v1",

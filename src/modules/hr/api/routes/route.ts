@@ -17,7 +17,7 @@ import {
   getEmployeeById,
   listEmployees,
   updateEmployee,
-} from "@/modules/hr/services/employeeRepository";
+} from "./employeeRepository";
 
 const ErrorSchema = z
   .object({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -13,27 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 
-import type { EmployeeFormValues } from "../types";
 import { createEmployee } from "../hooks/useEmployees";
-import { validateEmployee } from "../services/hrService";
-
-const EMPTY_VALUES: EmployeeFormValues = {
-  name: "",
-  email: "",
-  department: "Store",
-  status: "active",
-};
+import {
+  employeeDefaultValues,
+  useEmployeeForm,
+} from "../hooks/useEmployeeForm";
+import { EmployeeFormFields } from "./EmployeeFormFields";
 
 type Props = {
   open: boolean;
@@ -42,56 +28,40 @@ type Props = {
 
 export function CreateEmployeeDialog({ open, onOpenChange }: Props) {
   const queryClient = useQueryClient();
-  const [values, setValues] = useState<EmployeeFormValues>(EMPTY_VALUES);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useEmployeeForm({
+    defaultValues: employeeDefaultValues,
+    onSubmit: async (value) => {
+      setServerError("");
+      try {
+        await createEmployee(value);
+        await queryClient.invalidateQueries({ queryKey: ["employees"] });
+        onOpenChange(false);
+      } catch {
+        setServerError("Failed to save employee.");
+      }
+    },
+  });
 
   useEffect(() => {
     if (!open) {
-      setValues(EMPTY_VALUES);
-      setErrors({});
+      form.reset();
       setServerError("");
-      setIsSubmitting(false);
     }
-  }, [open]);
-
-  function handleChange(field: keyof EmployeeFormValues, value: string) {
-    setValues((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-
-    const validationErrors = validateEmployee(values);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setErrors({});
-    setServerError("");
-    setIsSubmitting(true);
-
-    try {
-      await createEmployee(values);
-      await queryClient.invalidateQueries({ queryKey: ["employees"] });
-      onOpenChange(false);
-    } catch {
-      setServerError("Failed to save employee.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  }, [open, form]);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!isSubmitting) onOpenChange(nextOpen);
+        if (!form.state.isSubmitting) onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="sm:max-w-md" showCloseButton={!isSubmitting}>
+      <DialogContent
+        className="sm:max-w-md"
+        showCloseButton={!form.state.isSubmitting}
+      >
         <DialogHeader>
           <DialogTitle>Add Employee</DialogTitle>
           <DialogDescription>
@@ -99,121 +69,47 @@ export function CreateEmployeeDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
           <div className="grid gap-4 py-2">
             {serverError && (
               <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {serverError}
               </p>
             )}
-
-            <div className="grid gap-2">
-              <Label htmlFor="create-employee-name">Name</Label>
-              <Input
-                id="create-employee-name"
-                value={values.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="John Doe"
-                disabled={isSubmitting}
-                aria-invalid={!!errors.name}
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="create-employee-email">Email</Label>
-              <Input
-                id="create-employee-email"
-                type="email"
-                value={values.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                placeholder="email@address.com"
-                disabled={isSubmitting}
-                aria-invalid={!!errors.email}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="create-employee-department">Department</Label>
-              <Select
-                value={values.department}
-                onValueChange={(value) => {
-                  if (value) handleChange("department", value);
-                }}
-                disabled={isSubmitting}
-                items={[
-                  { label: "Store", value: "Store" },
-                  { label: "Engineering", value: "Engineering" },
-                  { label: "Finance", value: "Finance" },
-                  { label: "Marketing", value: "Marketing" },
-                ]}
-              >
-                <SelectTrigger id="create-employee-department" className="w-full">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="Store">Store</SelectItem>
-                    <SelectItem value="Engineering">Engineering</SelectItem>
-                    <SelectItem value="Finance">Finance</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="create-employee-status">Status</Label>
-              <Select
-                value={values.status}
-                onValueChange={(value) => {
-                  if (value) handleChange("status", value);
-                }}
-                disabled={isSubmitting}
-                items={[
-                  { label: "Active", value: "active" },
-                  { label: "On Leave", value: "on_leave" },
-                ]}
-              >
-                <SelectTrigger id="create-employee-status" className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="on_leave">On Leave</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+            <EmployeeFormFields form={form} />
           </div>
 
-          <DialogFooter className="mx-0 mb-0 grid w-full grid-cols-2 gap-4 border-0 bg-transparent p-0 pt-4 sm:justify-stretch">
-            <Button
-              type="button"
-              className="w-full"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </span>
-              ) : (
-                "Add Employee"
-              )}
-            </Button>
-          </DialogFooter>
+          <form.Subscribe
+            selector={(state) => [state.isSubmitting]}
+            children={([isSubmitting]) => (
+              <DialogFooter className="mx-0 mb-0 grid w-full grid-cols-2 gap-4 border-0 bg-transparent p-0 pt-4 sm:justify-stretch">
+                <Button
+                  type="button"
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </span>
+                  ) : (
+                    "Add Employee"
+                  )}
+                </Button>
+              </DialogFooter>
+            )}
+          />
         </form>
       </DialogContent>
     </Dialog>

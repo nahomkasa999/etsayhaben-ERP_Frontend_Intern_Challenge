@@ -44,14 +44,47 @@ export const FiscalYearListResponseSchema = z.object({
   fiscalYears: z.array(FiscalYearListItemSchema),
 });
 
-export const CreateFiscalYearSchema = z.object({
-  fiscalYearName: z.string().min(1),
+const DDMMYYYY = /^\d{2}-\d{2}-\d{4}$/;
+
+function parseEthDate(dateStr: string) {
+  if (!DDMMYYYY.test(dateStr)) return null;
+  const [day, month, year] = dateStr.split("-").map(Number);
+  if (month < 1 || month > 13) return null;
+  if (day < 1) return null;
+  if (month <= 12 && day > 30) return null;
+  if (month === 13 && day > 6) return null;
+  return { day, month, year };
+}
+
+function dateToNumber(date: { day: number; month: number; year: number }) {
+  return date.year * 10000 + date.month * 100 + date.day;
+}
+
+const ethDateString = z
+  .string()
+  .min(1, "Date is required")
+  .refine((value) => parseEthDate(value) !== null, {
+    message: "Date must be in DD-MM-YYYY format with a valid date",
+  });
+
+const CreateFiscalYearObjectSchema = z.object({
+  fiscalYearName: z.string().min(1, "Fiscal year name is required"),
   calendarType: CalendarTypeSchema,
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
+  startDate: ethDateString,
+  endDate: ethDateString,
 });
 
-export const UpdateFiscalYearSchema = CreateFiscalYearSchema.partial();
+export const CreateFiscalYearSchema = CreateFiscalYearObjectSchema.refine(
+  (values) => {
+    const start = parseEthDate(values.startDate);
+    const end = parseEthDate(values.endDate);
+    if (!start || !end) return true;
+    return dateToNumber(end) > dateToNumber(start);
+  },
+  { message: "End date must be after start date", path: ["endDate"] },
+);
+
+export const UpdateFiscalYearSchema = CreateFiscalYearObjectSchema.partial();
 
 export const CloseFiscalYearSchema = z.object({
   justification: z.string().min(1),

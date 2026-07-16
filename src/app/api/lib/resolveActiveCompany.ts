@@ -2,7 +2,7 @@ import { getCookie } from "hono/cookie";
 import type { Context } from "hono";
 import prisma from "@/lib/db";
 import type { AppVariables } from "@/app/api/types/context";
-import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/types/constants";
 
 type AppEnv = { Variables: AppVariables };
 

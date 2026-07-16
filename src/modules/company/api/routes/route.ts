@@ -5,7 +5,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AppVariables } from "@/app/api/types/context";
 import { isOrganizationOwner } from "@/app/api/types/context";
 import { auth } from "@/lib/auth";
-import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/constants";
+import { ACTIVE_COMPANY_COOKIE } from "@/modules/company/types/constants";
 import {
   CompaniesListResponseSchema,
   CompanySchema,
@@ -24,7 +24,7 @@ import {
   getCompanyById,
   listCompanies,
   updateCompany as updateCompanyRepo,
-} from "@/modules/company/services/companyRepository";
+} from "./companyRepository";
 import { slugify } from "@/shared/lib/slug";
 
 const ErrorSchema = z
