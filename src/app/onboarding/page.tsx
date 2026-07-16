@@ -82,6 +82,11 @@ export default function OnboardingPage() {
     pickedOrganizationId ?? activeWorkspace?.id ?? workspaces[0]?.id ?? "";
   const companySelection =
     pickedCompanyId ?? activeCompany?.id ?? companies[0]?.id ?? "";
+  const selectedOrganization =
+    workspaces.find((workspace) => workspace.id === organizationSelection) ??
+    null;
+  const selectedCompany =
+    companies.find((company) => company.id === companySelection) ?? null;
 
   const step = getOnboardingStep({
     organizationsCount: workspaces.length,
@@ -146,10 +151,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
+    <div className="flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
       <div className="flex w-full max-w-xl flex-col gap-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Set up your workspace
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -189,8 +194,10 @@ export default function OnboardingPage() {
                 }}
                 disabled={isLoadingWorkspaces || workspaces.length === 0}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select organization">
+                    {selectedOrganization?.name}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {workspaces.map((workspace) => (
@@ -242,8 +249,10 @@ export default function OnboardingPage() {
                 }}
                 disabled={isLoadingCompanies || companies.length === 0}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select company" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select company">
+                    {selectedCompany?.name}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {companies.map((company) => (

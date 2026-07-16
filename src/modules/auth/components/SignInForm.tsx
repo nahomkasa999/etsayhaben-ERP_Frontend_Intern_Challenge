@@ -36,8 +36,7 @@ export default function SignInForm() {
   });
 
   return (
-    <div className="h-screen flex items-center justify-center px-2">
-      <Card className="z-10 w-[450px] mx-auto">
+    <Card className="z-10 w-full">
         <CardHeader>
           <CardTitle>Sign In</CardTitle>
           <CardDescription>Login to your account</CardDescription>
@@ -137,7 +136,6 @@ export default function SignInForm() {
             </p>
           </form>
         </CardContent>
-      </Card>
-    </div>
+    </Card>
   );
 }

@@ -39,8 +39,7 @@ export default function SignUpForm() {
   });
 
   return (
-    <div className="h-screen flex items-center justify-center px-2">
-      <Card className="z-10 w-[450px] mx-auto">
+    <Card className="z-10 w-full">
         <CardHeader>
           <CardTitle>Sign Up</CardTitle>
           <CardDescription>Create an account</CardDescription>
@@ -196,7 +195,6 @@ export default function SignUpForm() {
             </p>
           </form>
         </CardContent>
-      </Card>
-    </div>
+    </Card>
   );
 }
